@@ -1,0 +1,208 @@
+
+;-------------------------
+; Set cursor x,y
+;
+; Input: A = col, B = row
+; Return: none
+;-------------------------
+SETCURSOR
+    PSHS D
+    ANDA #$1F       ; clamp col [0..31]
+    ANDB #$F        ; clamp row [0..15]
+    MUL             ; compute vidbuf address
+    STD CURPOS      ; store cursor value
+
+    PULS D, PC      ; restore regs and return
+
+;-------------------
+; wait for keypress
+;
+; Input: none
+; Return: none
+;-------------------
+WAIT
+    JSR [CHARIN]    ; poll keyboard
+    BEQ WAIT        ; wait for keypress
+    RTS
+
+;--------------
+; clear screen
+;
+; Input: none
+; Return: none
+;--------------
+CLS
+    PSHS A, B, X
+    LDX #VIDRAM
+    STX CURPOS      ; RESET CURSOR POSITION
+
+    LDA #BLANK
+    TFR A, B
+
+CLS01
+    STD , X++
+    CMPX #VIDEND
+    BLT CLS01
+    PULS A, B, X, PC
+
+;-------------------------------------
+; SCROLL THE SCREEN
+;
+; Input: none
+; Return: none
+;-------------------------------------
+SCROLL
+    PSHS A, B, X
+    LDX #VIDRAM         ; get start of video ram
+
+SCROLL01
+    LDD 32, X           ; get two chars from next line
+    STD ,X++            ; store them in current line
+    CMPX #VIDSCROLL     ; continue until last-1 line
+    BLT SCROLL01
+
+    STX CURPOS          ; cursor is at start of last line
+    LDD #$6060          ; load up blanks
+    BRA CLS01           ; blank last line
+
+    ; !! should never get here!!
+    ; PULS A, B, X, PC
+
+;-------------------------------------
+; PUT A CHAR ON SCREEN
+;
+; Input: A is char to print
+; Return: none
+;-------------------------------------
+PUTC
+    PSHS A, B, X
+    LDX CURPOS          ; get cursor position
+    CMPA #BS            ; check for backspace
+    BNE PUTC01          ; if not, skip ahead
+
+    CMPX #VIDRAM        ; see if we are at top of screen
+    BEQ PUTC_DONE       ; yes, do nothing
+    
+    LDA #BLANK          ; blank char
+    STA ,-X             ; erase current char
+    BRA PUTC06          ; update cursor, check scroll and done
+
+PUTC01
+    CMPA #CR            ; check for carriage return
+    BNE PUTC03          ; if not, skip
+    LDX CURPOS          ; get cursor pos
+
+PUTC02                  ; blank rest of line
+    LDA #BLANK          ; (re)load blank char
+    STA ,X+             ; store it at curpos
+    TFR X, D            ; copy curpos (note: destroys A)
+    BITB #$1F           ; test for start of newline
+    BNE PUTC02          ; if not, do it again
+    BRA PUTC06          ; done blanking rest of line
+
+PUTC03
+    CMPA #SPACE
+    BCS PUTC_DONE       ; skip control chars
+    TSTA
+    BMI PUTC05          ; if graphics char print it
+    CMPA #$40           ; check for number or special chars
+    BCS PUTC04          ; if so, invert them
+    CMPA #$60           ; check for upper/lower
+    BCS PUTC05          ; if upper alpha print it
+    ANDA #$DF           ; clear bit 5, force lower to upper
+
+PUTC04
+    EORA #$40           ; toggle bit 6, upper/lower case
+
+PUTC05
+    STA ,X+             ; store A to screen and inc cursor
+
+PUTC06
+    STX CURPOS          ; save new cursor position
+    CMPX #VIDEND        ; see if we need to scroll
+    BLS PUTC_DONE       ; finished!
+
+    JSR SCROLL          ; scroll the screen
+
+PUTC_DONE
+    PULS A, B, X, PC
+
+;-------------------------------------
+; PUT A STRING ON SCREEN
+;
+; Input: X ptr to string
+; Return: none
+;-------------------------------------
+PUTS
+    PSHS A, X       ; save A and X
+
+PUTS01
+    LDA ,X+         ; get next char
+    CMPA #EOS       ; see if end of string
+    BEQ PUTS_DONE   ; if so we are done
+
+    JSR PUTC        ; otherwise put char on screen
+    BRA PUTS01      ; do it again
+
+PUTS_DONE
+    PULS A, X, PC   ; restore regs and return
+
+;-------------------
+; GET INPUT CHAR
+;
+; Input: none
+; Return: char in A
+;-------------------
+GETC
+    PSHS DP, Y, U       ; save regs
+
+GETC01
+    JSR [CHARIN]    ; poll keyboard
+    BEQ GETC01      ; wait for keypress
+
+    ; JSR PUTC        ; echo char to screen
+    PULS DP, Y, U, PC   ; restore regs and return
+
+;---------------------------
+; GET CHAR STRING
+; Input: X points to buffer
+; Return: string in buffer
+;---------------------------
+GETS
+    PSHS A, X       ; save A and X
+
+GETS01
+    JSR GETC        ; read an input char
+    CMPA #CR        ; check for return
+    BEQ GETS_DONE   ; if so we are done
+
+    CMPA #BS        ; check for backspace
+    BNE GETS02      ; if not, skip
+
+    CMPX #INBUF     ; see if buffer is empty
+    BEQ GETS01      ; if so, do it again
+
+    LEAX -1,X       ; erase last char from buffer
+    BRA GETS03
+
+GETS02
+    STA ,X+         ; otherwise add char to buf
+GETS03
+    JSR PUTC        ; echo char to screen
+    BRA GETS01      ; get another char
+
+GETS_DONE
+    CLRA            ; asciiz terminator
+    STA ,X          ; make asciiz
+    PULS A, X, PC   ; restore regs and return
+
+;--------------
+; quit program
+;--------------
+RESET
+    CLR RSTFLG          ; warm/cold reset?
+    JMP [RESET_VECTOR]  ; reboot
+
+    INBUF RMB 32        ; input buffer
+    INCUR FDB INBUF     ; input cursor
+    CURPOS FDB VIDRAM
