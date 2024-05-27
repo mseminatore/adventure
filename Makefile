@@ -5,12 +5,15 @@ ASM = as09
 ASMFLAGS = -b
 DSKFILE = ADV.DSK
 
-all: $(TARGET)
+all: $(TARGET) package
 
 $(TARGET): $(SRC) $(DEPS)
 	as09 $(ASMFLAGS) -o $@ $(SRC)
 	dsk_del $@ $(DSKFILE)
 	dsk_add $@ $(DSKFILE)
-	
+
+package: loader.bas
+	dsk_add $^ $(DSKFILE) a b
+
 clean:
 	rm $(TARGET)

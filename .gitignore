@@ -1,6 +1,7 @@
 # build files
 *.bin
 *.DSK
+.DS_Store
 
 # Prerequisites
 *.d

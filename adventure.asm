@@ -17,8 +17,8 @@ START
 
     ; zero out move counter
     LDX #MOVE_COUNT
+    STB ,X+
     STB ,X
-    STB 1,X
 
     JSR CLS         ; clear screen
     
@@ -30,7 +30,7 @@ START
     LDX #START_MSG  ; show start-up message
     JSR PUTS
 
-    BRA GAME_LOOP01 ;
+    BRA GAME_LOOP01 ; skip the initial room description
 
 GAME_LOOP
     JSR LOOK                ; describe current room
