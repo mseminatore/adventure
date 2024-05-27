@@ -350,14 +350,14 @@ PASS
     RTS
 
 ;----------------------------
-;
+; always true predicate
 ;----------------------------
 ALWAYS
     ORCC #FLAG_Z
     RTS
 
 ;----------------------------
-;
+; never true predicate
 ;----------------------------
 NEVER
     ANDCC #~FLAG_Z
@@ -629,6 +629,7 @@ INCLUDE "string.inc"
     RD25 FCZ "YOU ARE ON A LANDING. STAIRS LEAD NORTH AND EAST."
     RD26 FCZ "YOU ARE ON A STAIRWAY. STAIRS LEAD NORTH AND SOUTH."
     RD29 FCZ "YOU ARE AT THE TOP OF THE STAIRWAY. PASSAGES LEAD EAST, WEST AND STAIRS LEAD SOUTH."
+
     ;---------------------------
     ; Decorator descriptions
     ;---------------------------
@@ -849,7 +850,8 @@ ROOMS
     FDB NULL
 
 ;---------------------------
-;
+; Rules table
+; format: predicate, action
 ;---------------------------
 RULES
     FDB NEVER, PASS     ; do nothing test rule
