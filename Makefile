@@ -19,4 +19,4 @@ package: loader.bas
 	dsk_add $^ $(DSKFILE) a b
 
 clean:
-	rm $(TARGET)
+	rm $(TARGET) $(DSKFILE)
