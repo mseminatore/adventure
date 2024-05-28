@@ -889,6 +889,7 @@ ROOMS
     ; room 35
     ; FDB EAWE
     ; FCB 
+    
 ;---------------------------
 ; Rules table
 ; format: predicate, action
