@@ -31,20 +31,30 @@ PDB01
 ;--------------------------------
 ; Print decimal word
 ;
-; Input: word to print in D
+; Input: word to print in X
 ; Return: none
 ;--------------------------------
 PRINT_DEC_WORD
-    PSHS D, U           ; preserve D and U
+    PSHS D, X, U        ; preserve D, X and U
     LDU #STRTMP_TOP     ; set U stack at end of temp string
-    PSHS A              ; save A for later
     LDA #0              ; put string terminator in A
     PSHU A              ; put it in temp string
-    PULS A              ; restore A
     
 PDW01
+    TFR X, D            ; move X to D (divisor)
+    LDX #10             ; divide by 10
+    JSR DIVMOD16        ; get remainder
+    PSHS B              ; save B
+    ADDB #'0'           ; make ascii digit
+    PSHU B              ; put digit on stack
+    PULS B              ; restore B
+    CMPX #0             ; done?
+    BNE PDW01
 
-    PULS D, U, PC
+    TFR U, X            ; put string ptr in X
+    JSR PUTS            ; print it!
+
+    PULS D, X, U, PC
 
 ;--------------------------------
 ; Print lower nibble of hex byte
