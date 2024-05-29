@@ -65,19 +65,33 @@ GAME_LOOP01
 
 ;----------------------------
 ; check for room decorations
+; print all that are round for
+; the curent room
 ;----------------------------
 CHECK_DECORATIONS
-    PSHS A, X
+    PSHS A, B, X, Y
 
-    JSR GET_ROOM_PTR                ; get current room ptr
-    LDX ROOM_DECORATOR_OFFSET, X    ; get decorator ptr
-    CMPX #NULL                      ; NULL?
-    BEQ CHECK_DECORATIONS01         ; if so we're done
-
-    JSR PUTS            ; print description
+    LDY #DECORATIONS        ; get decorator table ptr
+    LDB ROOM                ; get current room number
+    LDA #SPACE
 
 CHECK_DECORATIONS01
-    PULS A, X, PC
+    LDX ,Y                      ; get decorator descriptor
+    CMPX #NULL                  ; end of table?
+    BEQ CHECK_DECORATIONS_DONE  ; if yes quit
+
+    CMPB DECORATOR_ROOM_OFFSET, Y   ; see if decorator matches room
+    BNE CHECK_DECORATIONS02         ; if room doesn't match, skip it
+
+    JSR PUTC                        ; print space
+    JSR PUTS                        ; print description
+
+CHECK_DECORATIONS02
+    LEAY DECORATOR_SIZE, Y          ; get next table item
+    BRA CHECK_DECORATIONS01
+
+CHECK_DECORATIONS_DONE
+    PULS A, B, X, Y, PC
 
 ;----------------------------
 ; check for doors
@@ -170,7 +184,7 @@ INV01
     BEQ INV04           ; if yes...
 
     LDA ITEM_LOC_OFFSET, Y  ; get item loc
-    CMPA #IN_PACK           ; in the pack?
+    CMPA #CARRYING           ; in the pack?
     BNE INV03               ; if not...
 
     CMPB #0                 ; is this the first item?
@@ -202,7 +216,7 @@ INV04
     BRA INVENTORY_DONE
 
 INV05
-    LDX #END_PACK_MSG
+    LDX #END_MSG
     JSR PUTS
 
 INVENTORY_DONE
@@ -245,10 +259,43 @@ SKIP_SPACES_DONE
     PULS A, PC
 
 ;----------------------------
+; Counts items being carried
+;
+; Input: none
+; Return: item count in A
+;----------------------------
+COUNT_ITEMS
+    PSHS B, X, Y            ; save B, X and Y
+    LDY #ITEMS              ; get items table ptr
+    CLRA                    ; zero item count
+
+COUNT_ITEMS01
+    LDX ,Y                  ; get item description ptr
+    CMPX #NULL              ; is it null?
+    BEQ COUNT_ITEMS_DONE    ; if so we are done
+
+    LDB ITEM_LOC_OFFSET,Y   ; get item loc
+    CMPB #CARRYING           ; being carried?
+    BNE COUNT_ITEMS02       ; if not, continue
+
+    INCA                    ; otherwise inc counter
+
+COUNT_ITEMS02
+    LEAY ITEM_SIZE, Y       ; get next item
+    BRA COUNT_ITEMS01       ; keep going
+
+COUNT_ITEMS_DONE
+    PULS B, X, Y, PC
+
+;----------------------------
 ; Get an object
 ;----------------------------
 GET
     PSHS D, X       ; save D and X
+
+    JSR COUNT_ITEMS ; how many items do we have?
+    CMPA ITEM_LIMIT ; compare it to our limit
+    BEQ GET04       ; if so print msg and quit
 
     LDX #INBUF      ; get input buffer
 
@@ -273,9 +320,9 @@ GET01
 
     LDA ITEM_LOC_OFFSET,Y   ; get item loc
     CMPA ROOM               ; in current room?
-    BNE GET02       ; if not...
+    BNE GET02               ; if not...
 
-    LDA #IN_PACK
+    LDA #CARRYING
     STA ITEM_LOC_OFFSET,Y   ; put item in pack
     LDX #PICKUP             ; print pickup msg
     JSR PUTS
@@ -287,6 +334,11 @@ GET02
 
 GET03
     LDX #GETWHAT            ; print can't find item
+    JSR PUTS
+    BRA GET_DONE
+
+GET04
+    LDX #PACK_FULL
     JSR PUTS
 
 GET_DONE
@@ -320,7 +372,7 @@ DROP01
     BNE DROP02      ; if not...
 
     LDA ITEM_LOC_OFFSET,Y   ; get item loc
-    CMPA #IN_PACK           ; in current room?
+    CMPA #CARRYING          ; carrying it?
     BNE DROP02              ; if not...
 
     LDA ROOM                ; get current room num
@@ -353,15 +405,120 @@ PASS
 ; always true predicate
 ;----------------------------
 ALWAYS
-    ORCC #FLAG_Z
+    ORCC #FLAG_Z    ; Z = 1 = true
     RTS
 
 ;----------------------------
 ; never true predicate
 ;----------------------------
 NEVER
-    ANDCC #~FLAG_Z
+    ANDCC #~FLAG_Z  ; z = 0 = false
     RTS
+
+;----------------------------
+; true if carrying item
+;
+; Input: item in X
+; Return: z = 1 = true if carrying
+;----------------------------
+; HAVE_ITEM
+
+;----------------------------
+; true if has small sack
+;----------------------------
+HAVE_SACK
+    PSHS A, X, Y
+
+    LDY #ITEMS      ; get item table ptr
+
+HAVE_SACK01
+    LDX ,Y              ; get item description ptr
+    CMPX #NULL          ; is it null?
+    BEQ HAVE_SACK_FALSE ; if so we are done
+
+    LDX [,Y]            ; get first two chars
+    CMPX #$534D         ; is item the small sack?
+    BNE HAVE_SACK02     ; if not continue
+
+    LDA ITEM_LOC_OFFSET, Y  ; get item loc
+    CMPA #CARRYING           ; are we carrying it?
+    BEQ HAVE_SACK_TRUE      ; if so return true
+
+HAVE_SACK02
+    LEAY ITEM_SIZE, Y   ; get next item
+    BRA HAVE_SACK01     ; continue
+
+HAVE_SACK_TRUE
+    ORCC #FLAG_Z    ; z = 1 = true
+    BRA HAVE_SACK_DONE
+
+HAVE_SACK_FALSE
+    ANDCC #~FLAG_Z  ; z = 0 = false
+
+HAVE_SACK_DONE
+    PULS A, X, Y, PC
+
+;----------------------------
+; true if has backpack
+;----------------------------
+HAVE_PACK
+    PSHS A, X, Y
+
+    LDY #ITEMS      ; get item table ptr
+
+HAVE_PACK01
+    LDX ,Y              ; get item description ptr
+    CMPX #NULL          ; is it null?
+    BEQ HAVE_PACK_FALSE ; if so we are done
+
+    LDX [,Y]            ; get first two chars
+    CMPX #$4241         ; is item the pack?
+    BNE HAVE_PACK02     ; if not continue
+
+    LDA ITEM_LOC_OFFSET, Y  ; get item loc
+    CMPA #CARRYING          ; are we carrying it?
+    BEQ HAVE_PACK_TRUE      ; if so return true
+
+HAVE_PACK02
+    LEAY ITEM_SIZE, Y   ; get next item
+    BRA HAVE_PACK01     ; continue
+
+HAVE_PACK_TRUE
+    ORCC #FLAG_Z    ; z = 1 = true
+    BRA HAVE_PACK_DONE
+
+HAVE_PACK_FALSE
+    ANDCC #~FLAG_Z  ; z = 0 = false
+
+HAVE_PACK_DONE
+    PULS A, X, Y, PC
+
+;----------------------------
+; set default item limit
+;----------------------------
+SET_ITEMS_DEFAULT
+    PSHS A
+    LDA #DEFAULT_ITEM_LIMIT
+    STA ITEM_LIMIT
+    PULS A, PC
+
+;----------------------------
+; set sack item limit
+;----------------------------
+SET_ITEMS_SACK
+    PSHS A
+    LDA #SACK_ITEM_LIMIT
+    STA ITEM_LIMIT
+    PULS A, PC
+
+;----------------------------
+; set pack item limit
+;----------------------------
+SET_ITEMS_PACK
+    PSHS A
+    LDA #PACK_ITEM_LIMIT
+    STA ITEM_LIMIT
+    PULS A, PC
 
 ;----------------------------
 ; Attempt to execute a command
@@ -404,10 +561,10 @@ GET_ROOM_PTR
     PSHS A, B, Y
 
     LDA ROOM        ; get current room number
-    LDB #RECSIZE     ; room record size in bytes
+    LDB #ROOM_SIZE  ; room record size in bytes
     MUL             ; compute index offset for room
     LDY #ROOMS      ; get start of room table
-    LEAX D, Y        ; get record for current room
+    LEAX D, Y       ; get record for current room
     PULS A, B, Y, PC
 
 ;-------------------------
@@ -419,11 +576,11 @@ GET_ROOM_PTR
 MOVE
     PSHS A, X
 
-    JSR GET_ROOM_PTR    ; get current room ptr
-    LEAX 2,X            ; inc ptr to move tbl
-    LDA B, X            ; get next room
-    CMPA #-1            ; is invalid?
-    BEQ MOVE_ERR        ; if so show err message
+    JSR GET_ROOM_PTR        ; get current room ptr
+    LEAX ROOM_MOVE_OFFSET,X ; inc ptr to move tbl
+    LDA B, X                ; get next room
+    CMPA #-1                ; is invalid?
+    BEQ MOVE_ERR            ; if so show err message
 
     ORCC #FLAG_C        ; set carry
     STA ROOM            ; otherwise update room
@@ -590,9 +747,29 @@ SCORE_CMD
     LDA SCORE
     JSR PRINT_DEC_BYTE
 
-    LDX #SCORE_TAIL
+    LDX #END_MSG
     JSR PUTS
     PULS A, X, PC
+
+;------------------------------------
+;
+;------------------------------------
+DBG_ITEMS
+    PSHS A, X
+    LDX #PACK_MSG
+    JSR PUTS
+    JSR COUNT_ITEMS
+    JSR PRINT_DEC_BYTE
+    LDA #'/'
+    JSR PUTC
+    LDA ITEM_LIMIT
+    JSR PRINT_DEC_BYTE
+    LDA #CR
+    JSR PUTC
+    JSR PUTC
+
+    PULS A, X, PC
+
 ;------------------------------------
 ; Include various function libraries
 ;------------------------------------
@@ -625,16 +802,18 @@ INCLUDE "math.inc"
 
     START_MSG FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. YOU MUST FIND YOUR WAY OUT. "
 
-    NOITEMS FCC "NOTHING!" FCB CR, CR, EOS
+    NOITEMS FCZ "NOTHING!\r\r"
 
-    PACK_MSG FCZ "YOUR PACK CONTAINS: "
-    END_PACK_MSG FCC "." FCB CR, CR, EOS
+    PACK_MSG FCZ "YOU ARE CARRYING: "
+    END_MSG FCZ ".\r\r"
     PACK_GLUE_MSG FCZ ", AND "
+    PACK_FULL FCZ "YOU CAN'T CARRY ANY MORE!\r\r"
+
     ITEM_MSG1 FCZ " THERE IS A "
     ITEM_MSG2 FCZ " HERE."
     THEREISNO FCZ "THERE IS NO "
     GETWHAT FCZ "GET WHAT?\r\r"
-    HELP_MSG FCC "TRY VERBS LIKE: LOOK, NORTH, PACK, GET, DROP" FCB CR, EOS
+    HELP_MSG FCZ "TRY VERBS LIKE: LOOK, NORTH, PACK, GET, DROP\r"
     PICKUP FCZ "YOU PICK UP THE ITEM.\r\r"
     DROPWHAT FCZ "DROP WHAT?\r\r"
     DROPITEM FCZ "YOU DROP THE ITEM.\r\r"
@@ -643,9 +822,9 @@ INCLUDE "math.inc"
     HEALTH_TAIL FCZ " HP LEFT.\r\r"
 
     SCORE_START FCZ "YOUR SCORE IS "
-    SCORE_TAIL FCZ ".\r\r"
+    ; SCORE_TAIL FCZ ".\r\r"
 
-    MATCH FCZ "Match!\r\r"
+    ; MATCH FCZ "Match!\r\r"
     ; ALWAYS_MSG FCZ "ALWAYS!\r"
     ; NEVER_MSG FCZ "NEVER!\r"
     ; PASS_MSG FCZ "PASS!\r"
@@ -653,12 +832,13 @@ INCLUDE "math.inc"
     ;---------------------------
     ; Room descriptions
     ;---------------------------
+    HALL FCZ "YOU ARE IN A HALLWAY."
     NOSO FCZ "YOU ARE IN A HALLWAY. PASSAGES LEAD NORTH AND SOUTH."
     EAWE FCZ "YOU ARE IN A HALLWAY. PASSAGES LEAD EAST AND WEST."
     NOWE FCZ "YOU ARE IN A HALLWAY. PASSAGES LEAD NORTH AND WEST."
     SOWE FCZ "YOU ARE IN A HALLWAY. PASSAGES LEAD WEST AND SOUTH."
 
-    RD0 FCZ "YOU ARE IN A SMALL DIMLY LIT ROOM. YOU HEAR WATER DRIPPING NEARBY. IT MIGHT BE A CLOSET. IT SMELLS LIKE BLEACH. A DOOR IS IN THE EAST WALL."
+    RD0 FCZ "YOU ARE IN A SMALL DIMLY LIT ROOM. IT MIGHT BE A CLOSET. IT SMELLS LIKE BLEACH. A DOOR IS IN THE EAST WALL."
     RD1 FCZ "YOU ARE IN A HALLWAY. PASSAGES LEAD NORTH AND SOUTH. THERE IS AN OPEN DOOR TO THE WEST."
     RD5 FCZ "YOU ARE IN A NORTH-SOUTH HALLWAY. TO THE SOUTH THERE IS HOLE IN THE FLOOR."
     RD6 FCZ "YOU ARE IN A SMALL RESTROOM."
@@ -676,11 +856,12 @@ INCLUDE "math.inc"
     ;---------------------------
     ; Decorator descriptions
     ;---------------------------
-    D0 FCZ "THERE IS A SCONCE ON THE WALL."
-    D1 FCZ "THE WALLS ARE MADE OF ROUGH STONE."
-    D2 FCZ "THE AIR SMELLS MUSTY."
-    D3 FCZ "THE FLOOR AND WALLS ARE TILED."
-    D4 FCZ "DUST MOTES SWIRL IN THE AIR."
+    SCONCE FCZ "THERE IS A SCONCE ON THE WALL."
+    SLIMY_STONE FCZ "THE WALLS ARE SLIMY AND MADE OF ROUGH STONE."
+    MUSTY FCZ "THE AIR SMELLS MUSTY."
+    TILED FCZ "THE FLOOR AND WALLS ARE TILED."
+    DUSTY FCZ "DUST MOTES SWIRL IN THE AIR."
+    DRIPPING FCZ "YOU HEAR WATER DRIPPING NEARBY."
 
     ;---------------------------
     ; Object descriptions
@@ -702,7 +883,7 @@ INCLUDE "math.inc"
     BUCKET FCZ "BUCKET"
 
 ;---------------------------
-; Object table
+; Item table
 ; Format: description, room
 ;---------------------------
 ITEMS
@@ -715,11 +896,12 @@ ITEMS
     FDB MOP FCB 0
     FDB BLEACH FCB 0
     FDB BACKPACK FCB 65
+    FDB SMALL_SACK FCB 0
     FDB HAMMER FCB 46
     FDB CHEESE FCB 56
     FDB WINE FCB 63
     FDB BUCKET FCB 33
-    FDB NULL
+    FDB NULL    ; end of table
 
 ;---------------------------
 ; Command jump table
@@ -748,189 +930,170 @@ CMDS
     FCC "RO" FDB DBG_ROOM
     FCC "HO" FDB DBG_HOME
     FCC "RP" FDB DBG_RP
-    FDB NULL
+    FCC "IT" FDB DBG_ITEMS
+    FDB NULL    ; end of table
+
+;---------------------------
+; Decorations table
+; Format: descriptor, room
+;---------------------------
+DECORATIONS
+    FDB DRIPPING FCB 0
+    FDB SCONCE FCB 2
+    FDB TILED FCB 6
+    FDB DUSTY FCB 8
+    FDB SLIMY_STONE FCB 14
+    FDB SLIMY_STONE FCB 15
+    FDB DUSTY FCB 21
+    FDB MUSTY FCB 23
+    FDB DRIPPING FCB 24
+
+    FDB NULL    ; end of table
 
 ;---------------------------
 ; Room table
-;
-; format: roomdesc,N,S,E,W,Decorator
+; Format: roomdesc,N,S,E,W
 ;---------------------------
-ROOMS 
-    
+ROOMS
     ; room 0
     FDB RD0
     FCB -1, -1, 1, -1   ; , $80 | $04
-    FDB NULL
 
     ; room 1
     FDB RD1
     FCB 2, 3, -1, 0
-    FDB NULL
 
     ; room 2
     FDB NOSO
     FCB 4, 1, -1, -1
-    FDB D0
 
     ; room 3
     FDB NOSO
     FCB 1, 5, -1, -1
-    FDB NULL
 
     ; room 4
     FDB NOSO
     FCB 7, 2, 6, -1
-    FDB NULL
 
     ; room 5
     FDB RD5
     FCB 3, 14, -1, -1
-    FDB NULL
 
     ; room 6
     FDB RD6
     FCB -1, -1, -1, 4
-    FDB D3
 
     ; room 7
     FDB NOSO
     FCB 8, 4, -1, -1
-    FDB NULL
 
     ; room 8
     FDB RD8
     FCB -1, 7, 9, 16
-    FDB NULL
 
     ; room 9
     FDB EAWE
     FCB -1, -1, 10, 8
-    FDB NULL
 
     ; room 10
     FDB SOWE
     FCB -1, 11, -1, 9
-    FDB NULL
 
     ; room 11
     FDB NOSO
     FCB 10, 12, -1, -1
-    FDB NULL
 
     ; room 12
     FDB NOSO
     FCB 11, 13, -1, -1
-    FDB NULL
 
     ; room 13
     FDB RD13
     FCB 12, -1, 17, -1
-    FDB NULL
 
     ; room 14
     FDB RD14
     FCB -1, 15, -1, -1
-    FDB D1
 
     ; room 15
     FDB NOWE
     FCB 14, -1, -1, 30
-    FDB D1
 
     ; room 16
     FDB RD16
     FCB -1, -1, 8, 25
-    FDB NULL
 
     ; room 17
     FDB EAWE
     FCB -1, -1, 18, 13
-    FDB NULL
 
     ; room 18
     FDB NOWE
     FCB 19, 22, -1, 17
-    FDB NULL
 
     ; room 19
     FDB NOSO
     FCB 20, 18, -1, -1
-    FDB NULL
 
     ; room 20
     FDB NOSO
     FCB 21, 19, -1, -1
-    FDB NULL
 
     ; room 21
     FDB RD21
     FCB -1, 20, -1, -1
-    FDB D4
 
     ; room 22
     FDB NOSO
     FCB 18, 23, -1, -1
-    FDB NULL
 
     ; room 23
     FDB NOSO
     FCB 22, 24, -1, -1
-    FDB D2
 
     ; room 24
     FDB RD21
     FCB 23, -1, -1, -1
-    FDB D4
 
     ; room 25
     FDB RD25
     FCB -1, -1, 16, -1
-    FDB NULL
 
     ; room 26
     FDB RD26
     FCB 27, 25, -1, -1
-    FDB NULL
 
     ; room 27
     FDB RD26
     FCB 28, 26, -1, -1
-    FDB NULL
 
     ; room 28
     FDB RD26
     FCB 29, 27, -1, -1
-    FDB NULL
 
     ; room 29
     FDB RD29
     FCB -1, 28, -1, -1
-    FDB NULL
 
     ; room 30
     FDB EAWE
     FCB -1, -1, 15, 31
-    FDB NULL
 
     ; room 31
     FDB RD31
     FCB 32, 51, 30, 35
-    FDB NULL
 
     ; room 32
     FDB NOSO
     FCB 33, 31, -1, -1
-    FDB NULL
 
     ; room 33
     FDB SOWE
     FCB -1, 32, -1, 34
-    FDB NULL
 
     ; room 34
     FDB RD34
     FCB -1, -1, 33, -1
-    FDB NULL
 
     ; room 35
     ; FDB EAWE
@@ -941,16 +1104,19 @@ ROOMS
 ; format: predicate, action
 ;---------------------------
 RULES
-    FDB NEVER, PASS     ; do nothing test rule
+    FDB NEVER, PASS                 ; do nothing test rule
+    FDB ALWAYS, SET_ITEMS_DEFAULT   ; set base inventory limit
+    FDB HAVE_SACK, SET_ITEMS_SACK   ; sack gives more items
+    FDB HAVE_PACK, SET_ITEMS_PACK   ; backpack gives even more
     FDB NULL
 
 ;---------------------------
 ; Vars and structures
 ;---------------------------
-    ; PACK RMB PACKSIZE   ; backpack
+    ITEM_LIMIT FCB 0    ; limit of items carried 
     ROOM FCB 0          ; current room number
     MOVE_COUNT FDB 0    ; total number of moves
-    DARK FCB 0
+    DARK FCB 0          ; true if dark
     HEALTH FCB 100      ; current HP
     SCORE FDB 0         ; score achieved
 
