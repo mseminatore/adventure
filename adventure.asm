@@ -421,77 +421,60 @@ NEVER
 ; Input: item in X
 ; Return: z = 1 = true if carrying
 ;----------------------------
-; HAVE_ITEM
+HAVE_ITEM
+    PSHS A, Y
+    LDY #ITEMS      ; get item table ptr
+    PSHS X          ; save copy of X
+
+HAVE_ITEM01
+    LDX ,Y              ; get item description ptr
+    CMPX #NULL          ; is it null?
+    BEQ HAVE_ITEM_FALSE ; if so we are done
+
+    LDX [,Y]            ; get first two chars
+    CMPX ,S         ; is item the small sack?
+    BNE HAVE_ITEM02     ; if not continue
+
+    LDA ITEM_LOC_OFFSET, Y  ; get item loc
+    CMPA #CARRYING           ; are we carrying it?
+    BEQ HAVE_ITEM_TRUE      ; if so return true
+
+HAVE_ITEM02
+    LEAY ITEM_SIZE, Y   ; get next item
+    BRA HAVE_ITEM01     ; continue
+
+HAVE_ITEM_TRUE
+    ORCC #FLAG_Z    ; z = 1 = true
+    BRA HAVE_ITEM_DONE
+
+HAVE_ITEM_FALSE
+    ANDCC #~FLAG_Z  ; z = 0 = false
+
+HAVE_ITEM_DONE
+    PULS X          ; restore copy of X
+    PULS A, Y, PC
 
 ;----------------------------
 ; true if has small sack
 ;----------------------------
 HAVE_SACK
-    PSHS A, X, Y
+    PSHS X
 
-    LDY #ITEMS      ; get item table ptr
+    LDX #$534D          ; sack ID
+    JSR HAVE_ITEM       ; do we have it?
 
-HAVE_SACK01
-    LDX ,Y              ; get item description ptr
-    CMPX #NULL          ; is it null?
-    BEQ HAVE_SACK_FALSE ; if so we are done
-
-    LDX [,Y]            ; get first two chars
-    CMPX #$534D         ; is item the small sack?
-    BNE HAVE_SACK02     ; if not continue
-
-    LDA ITEM_LOC_OFFSET, Y  ; get item loc
-    CMPA #CARRYING           ; are we carrying it?
-    BEQ HAVE_SACK_TRUE      ; if so return true
-
-HAVE_SACK02
-    LEAY ITEM_SIZE, Y   ; get next item
-    BRA HAVE_SACK01     ; continue
-
-HAVE_SACK_TRUE
-    ORCC #FLAG_Z    ; z = 1 = true
-    BRA HAVE_SACK_DONE
-
-HAVE_SACK_FALSE
-    ANDCC #~FLAG_Z  ; z = 0 = false
-
-HAVE_SACK_DONE
-    PULS A, X, Y, PC
+    PULS X, PC
 
 ;----------------------------
 ; true if has backpack
 ;----------------------------
 HAVE_PACK
-    PSHS A, X, Y
+    PSHS X
 
-    LDY #ITEMS      ; get item table ptr
+    LDX #$4241          ; pack ID
+    JSR HAVE_ITEM       ; do we have it>?
 
-HAVE_PACK01
-    LDX ,Y              ; get item description ptr
-    CMPX #NULL          ; is it null?
-    BEQ HAVE_PACK_FALSE ; if so we are done
-
-    LDX [,Y]            ; get first two chars
-    CMPX #$4241         ; is item the pack?
-    BNE HAVE_PACK02     ; if not continue
-
-    LDA ITEM_LOC_OFFSET, Y  ; get item loc
-    CMPA #CARRYING          ; are we carrying it?
-    BEQ HAVE_PACK_TRUE      ; if so return true
-
-HAVE_PACK02
-    LEAY ITEM_SIZE, Y   ; get next item
-    BRA HAVE_PACK01     ; continue
-
-HAVE_PACK_TRUE
-    ORCC #FLAG_Z    ; z = 1 = true
-    BRA HAVE_PACK_DONE
-
-HAVE_PACK_FALSE
-    ANDCC #~FLAG_Z  ; z = 0 = false
-
-HAVE_PACK_DONE
-    PULS A, X, Y, PC
+    PULS X, PC
 
 ;----------------------------
 ; set default item limit
