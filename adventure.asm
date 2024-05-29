@@ -248,7 +248,7 @@ SKIP_SPACES_DONE
 ; Get an object
 ;----------------------------
 GET
-    PSHS D, X
+    PSHS D, X       ; save D and X
 
     LDX #INBUF      ; get input buffer
 
@@ -268,7 +268,7 @@ GET01
     CMPD #NULL
     BEQ GET_DONE
 
-    CMPX [,Y]         ; see if item matches
+    CMPX [,Y]       ; see if item matches
     BNE GET02       ; if not...
 
     LDA ITEM_LOC_OFFSET,Y   ; get item loc
@@ -277,16 +277,16 @@ GET01
 
     LDA #IN_PACK
     STA ITEM_LOC_OFFSET,Y   ; put item in pack
-    LDX #PICKUP
+    LDX #PICKUP             ; print pickup msg
     JSR PUTS
-    BRA GET_DONE
+    BRA GET_DONE            ; finished!
 
 GET02
-    LEAY ITEM_SIZE, Y   ; get next item
+    LEAY ITEM_SIZE, Y       ; get next item ptr
     BRA GET01
 
 GET03
-    LDX #GETWHAT
+    LDX #GETWHAT            ; print can't find item
     JSR PUTS
 
 GET_DONE
@@ -296,7 +296,7 @@ GET_DONE
 ; Drop an object
 ;----------------------------
 DROP
-    PSHS D, X
+    PSHS D, X       ; save D and X
 
     LDX #INBUF      ; get input buffer
 
@@ -523,6 +523,8 @@ DBG_HOME
 ;-------------------------
 DBG_RP
     PSHS A, X
+    LDA #'$'
+    JSR PUTC
     JSR GET_ROOM_PTR
     JSR PRINT_HEX_WORD      ; 
     LDA #CR
@@ -556,7 +558,7 @@ DBG_ROOM
     JSR PUTS
 
     LDA ROOM
-    JSR PRINT_HEX_BYTE
+    JSR PRINT_DEC_BYTE
     LDA #CR
     JSR PUTC
 
@@ -565,6 +567,7 @@ DBG_ROOM
 INCLUDE "print.inc"
 INCLUDE "io.inc"
 INCLUDE "string.inc"
+INCLUDE "math.inc"
 
 ;[]--------------[]
 ; Data segment
@@ -584,9 +587,9 @@ INCLUDE "string.inc"
     EAST_MOVE FCC "YOU MOVE TO THE EAST." FCB CR, CR, EOS
     WEST_MOVE FCC "YOU MOVE TO THE WEST." FCB CR, CR, EOS
 
-    ROOM_MSG FCC "ROOM " FCB EOS
+    ROOM_MSG FCZ "ROOM "
 
-    MOVE_MSG FCC "MOVES " FCB EOS
+    MOVE_MSG FCZ "MOVES $"
 
     START_MSG FCC "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. ALL YOU HAVE IS AN EMPTY BACKPACK. " FCB EOS
 
@@ -903,8 +906,8 @@ RULES
 ;---------------------------
     ; PACK RMB PACKSIZE   ; backpack
     ROOM FCB 0          ; current room number
-    MOVE_COUNT FDB 0         ; total number of moves
+    MOVE_COUNT FDB 0    ; total number of moves
     DARK FCB 0
-    HEALTH FCB 0
+    HEALTH FCB 100
 
     END START
