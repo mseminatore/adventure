@@ -73,10 +73,29 @@ STRCMP_DONE
     PULS A, B, PC
 
 ;--------------------------------
-; Reverse a string in place
+; Copy str (in X) to Y
 ;
-; Input: ptr to string in X
+; Input: ptr to strs in X, Y
 ; Return: none
 ;--------------------------------
-STRREV
+STRCPY
+    PSHS A, X, Y    ; save X and Y
+
+STRCPY01
+    LDA ,X+         ; load next char
+    BEQ STRCPY_DONE ; if null terminator then done
+    STA, Y+         ; otherwise copy the char
+    BRA STRCPY01    ; keep going
+
+STRCPY_DONE
+    PULS A, X, Y, PC
+
+;--------------------------------
+;
+;
+; Input: 
+; Return:
+;--------------------------------
+STRTOK
     RTS
+    

@@ -314,7 +314,7 @@ DROP
 DROP01
     LDD ,Y          ; get item description ptr
     CMPD #NULL      ; if NULL we are at end of list
-    BEQ DROP_DONE
+    BEQ DROP03
 
     CMPX [,Y]       ; see if item matches
     BNE DROP02      ; if not...
@@ -542,7 +542,7 @@ MOVES
     JSR PUTS
 
     LDX MOVE_COUNT
-    JSR PRINT_HEX_WORD
+    JSR PRINT_DEC_WORD
     LDA #CR
     JSR PUTC
 
@@ -564,6 +564,38 @@ DBG_ROOM
 
     PULS A, X, PC
 
+;-------------------------
+; display health
+;-------------------------
+HEALTH_CMD
+    PSHS A, X
+    LDX #HEALTH_START
+    JSR PUTS
+
+    LDA HEALTH
+    JSR PRINT_DEC_BYTE
+
+    LDX #HEALTH_TAIL
+    JSR PUTS
+    PULS A, X, PC
+
+;------------------------------------
+; display score
+;------------------------------------
+SCORE_CMD
+    PSHS A, X
+    LDX #SCORE_START
+    JSR PUTS
+
+    LDA SCORE
+    JSR PRINT_DEC_BYTE
+
+    LDX #SCORE_TAIL
+    JSR PUTS
+    PULS A, X, PC
+;------------------------------------
+; Include various function libraries
+;------------------------------------
 INCLUDE "print.inc"
 INCLUDE "io.inc"
 INCLUDE "string.inc"
@@ -589,9 +621,9 @@ INCLUDE "math.inc"
 
     ROOM_MSG FCZ "ROOM "
 
-    MOVE_MSG FCZ "MOVES $"
+    MOVE_MSG FCZ "MOVES "
 
-    START_MSG FCC "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. ALL YOU HAVE IS AN EMPTY BACKPACK. " FCB EOS
+    START_MSG FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. YOU MUST FIND YOUR WAY OUT. "
 
     NOITEMS FCC "NOTHING!" FCB CR, CR, EOS
 
@@ -607,6 +639,12 @@ INCLUDE "math.inc"
     DROPWHAT FCZ "DROP WHAT?\r\r"
     DROPITEM FCZ "YOU DROP THE ITEM.\r\r"
 
+    HEALTH_START FCZ "YOU HAVE "
+    HEALTH_TAIL FCZ " HP LEFT.\r\r"
+
+    SCORE_START FCZ "YOUR SCORE IS "
+    SCORE_TAIL FCZ ".\r\r"
+
     MATCH FCZ "Match!\r\r"
     ; ALWAYS_MSG FCZ "ALWAYS!\r"
     ; NEVER_MSG FCZ "NEVER!\r"
@@ -620,7 +658,7 @@ INCLUDE "math.inc"
     NOWE FCZ "YOU ARE IN A HALLWAY. PASSAGES LEAD NORTH AND WEST."
     SOWE FCZ "YOU ARE IN A HALLWAY. PASSAGES LEAD WEST AND SOUTH."
 
-    RD0 FCZ "YOU ARE IN A SMALL DIMLY LIT ROOM. YOU HEAR WATER DRIPPING SOMEWHERE NEARBY. IT MIGHT BE A CLOSET. IT SMELLS LIKE BLEACH. A DOOR IS IN THE EAST WALL."
+    RD0 FCZ "YOU ARE IN A SMALL DIMLY LIT ROOM. YOU HEAR WATER DRIPPING NEARBY. IT MIGHT BE A CLOSET. IT SMELLS LIKE BLEACH. A DOOR IS IN THE EAST WALL."
     RD1 FCZ "YOU ARE IN A HALLWAY. PASSAGES LEAD NORTH AND SOUTH. THERE IS AN OPEN DOOR TO THE WEST."
     RD5 FCZ "YOU ARE IN A NORTH-SOUTH HALLWAY. TO THE SOUTH THERE IS HOLE IN THE FLOOR."
     RD6 FCZ "YOU ARE IN A SMALL RESTROOM."
@@ -655,12 +693,13 @@ INCLUDE "math.inc"
     BROWN_BOOK FCZ "LEATHER BOOK"
     SMALL_SACK FCZ "SMALL SACK"
     BACKPACK FCZ "BACKPACK"
-    MOP FCZ "OLD MOP"
+    MOP FCZ "MOP"
     BLEACH FCZ "BOTTLE OF BLEACH"
-    CHEESE FCZ "MOLDY CHEESE"
+    CHEESE FCZ "SWISS CHEESE"
     WINE FCZ "WINE BOTTLE"
     HAMMER FCZ "HAMMER"
     FLASHLIGHT FCZ "FLASHLIGHT"
+    BUCKET FCZ "BUCKET"
 
 ;---------------------------
 ; Object table
@@ -679,10 +718,12 @@ ITEMS
     FDB HAMMER FCB 46
     FDB CHEESE FCB 56
     FDB WINE FCB 63
+    FDB BUCKET FCB 33
     FDB NULL
 
 ;---------------------------
 ; Command jump table
+; Format: char, function
 ;---------------------------
 CMDS
     FCC "LO" FDB PASS           ; look around
@@ -692,14 +733,16 @@ CMDS
     FCC "WE" FDB WEST
     FCC "QU" FDB RESET          ; quit game
     FCC "IN" FDB INVENTORY      ; display inventory
-    FCC "PA" FDB INVENTORY
+    FCC "PA" FDB INVENTORY      ; display inventory
     FCC "OP" FDB PASS           ; open door
     FCC "DR" FDB DROP           ; drop an object
     FCC "GE" FDB GET            ; get an objectø
     FCC "TA" FDB GET            ; take an object
     FCC "MO" FDB MOVES          ; display move count
-    FCC "HE" FDB PASS           ; help command
+    FCC "??" FDB PASS           ; help command
     FCC "CL" FDB PASS           ; close door
+    FCC "HE" FDB HEALTH_CMD     ; display health
+    FCC "SC" FDB SCORE_CMD      ; display score
 
     ; debug commands
     FCC "RO" FDB DBG_ROOM
@@ -908,6 +951,7 @@ RULES
     ROOM FCB 0          ; current room number
     MOVE_COUNT FDB 0    ; total number of moves
     DARK FCB 0
-    HEALTH FCB 100
+    HEALTH FCB 100      ; current HP
+    SCORE FDB 0         ; score achieved
 
     END START
