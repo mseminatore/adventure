@@ -4,7 +4,10 @@
     DEFAULT_ITEM_LIMIT EQU 2
     SACK_ITEM_LIMIT EQU 4
     PACK_ITEM_LIMIT EQU 6
-        
+
+    SACK_ID EQU $534D       ; 'SA'
+    PACK_ID EQU $4241       ; 'PA'
+
     ROOM_SIZE EQU 6         ; size of room entry 2 + 1 x 4 = 6
     ROOM_MOVE_OFFSET EQU 2  ; offset of move items
 

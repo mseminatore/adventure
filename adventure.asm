@@ -41,9 +41,9 @@ GAME_LOOP
 
     JSR CHECK_DOORS         ; print any doors
 
+GAME_LOOP01
     JSR CHECK_RULES         ; check for rules
 
-GAME_LOOP01
     LDA #CR         ; newlines
     JSR PUTC
 
@@ -444,11 +444,13 @@ HAVE_ITEM02
     BRA HAVE_ITEM01     ; continue
 
 HAVE_ITEM_TRUE
-    ORCC #FLAG_Z    ; z = 1 = true
+    ; ORCC #FLAG_Z    ; z = 1 = true
+    SETZ
     BRA HAVE_ITEM_DONE
 
 HAVE_ITEM_FALSE
-    ANDCC #~FLAG_Z  ; z = 0 = false
+    ; ANDCC #~FLAG_Z  ; z = 0 = false
+    CLRZ
 
 HAVE_ITEM_DONE
     PULS X          ; restore copy of X
@@ -460,7 +462,7 @@ HAVE_ITEM_DONE
 HAVE_SACK
     PSHS X
 
-    LDX #$534D          ; sack ID
+    LDX #SACK_ID        ; sack ID
     JSR HAVE_ITEM       ; do we have it?
 
     PULS X, PC
@@ -471,7 +473,7 @@ HAVE_SACK
 HAVE_PACK
     PSHS X
 
-    LDX #$4241          ; pack ID
+    LDX #PACK_ID        ; pack ID
     JSR HAVE_ITEM       ; do we have it>?
 
     PULS X, PC
@@ -825,7 +827,7 @@ INCLUDE "math.inc"
     RD5 FCZ "TO THE SOUTH THERE IS HOLE IN THE FLOOR."
     RD6 FCZ "YOU ARE IN A SMALL RESTROOM."
     RD8 FCZ "YOU ARE IN A LARGE LIBRARY. DUSTY BOOKS LINE SHELVES ON THE NORTH WALL. TO THE EAST IS A HALLWAY. TO THE WEST STAIRS LEAD UPWARD."
-    RD13 FCZ "YOU ARE IN A SMALL SITTING ROOM."
+    RD13 FCZ "YOU ARE IN A SMALL PARLOR."
     RD14 FCZ "YOU ARE AT THE BOTTOM OF A PIT. THERE IS AN OPENING TO THE SOUTH."
     RD21 FCZ "YOU ARE IN A LARGE BEDROOM."
     RD29 FCZ "YOU ARE AT THE TOP OF THE STAIRWAY. PASSAGES LEAD EAST, WEST AND STAIRS LEAD SOUTH."
@@ -835,6 +837,8 @@ INCLUDE "math.inc"
     RD46 FCZ "YOU ARE IN A SMALL WORKROOM. A WOODEN BENCH IS ON THE SOUTH WALL."
     RD56 FCZ "YOU ARE IN A SMALL STOREROOM. IT SMELLS LIKE ROTTEN CHEESE."
     RD63 FCZ "YOU ARE IN A SMALL STOREROOM. IT SMELLS LIKE SOUR WINE."
+    RD65 FCZ "YOU ARE IN A DINING ROOM."
+    RD70 FCZ "YOU ARE IN A SITTING ROOM."
 
     ;---------------------------
     ; Decorator descriptions
@@ -996,6 +1000,12 @@ DECORATIONS
     FDB NOSO FCB 44
     FDB NOSO FCB 45
     FDB NOSO FCB 47
+    FDB EAWE FCB 64
+    FDB EAWE FCB 65
+    FDB EAWE FCB 66
+    FDB NOWE FCB 67
+    FDB NOSO FCB 68
+    FDB NOSO FCB 69
 
     FDB NULL    ; end of table
 
@@ -1260,12 +1270,40 @@ ROOMS
     FDB RD63
     FCB 62, -1, -1, -1
 
+    ; room 65
+    FDB RD65
+    FCB -1, -1, 66, 64
+
+    ; room 66
+    FDB HALL
+    FCB -1, -1, 67, 65
+
+    ; room 67
+    FDB HALL
+    FCB 68,-1,-1,66
+
+    ; room 68
+    FDB HALL
+    FCB 69,67,-1,-1
+
+    ; room 69
+    FDB HALL
+    FCB 70,68,-1,-1
+
+    ; room 70
+    FDB RD70
+    FCB -1,69,-1,-1
+
+    ; room 71
+    FDB HALL
+    FCB -1,-1,29,-1
+
 ;---------------------------
 ; Rules table
 ; format: predicate, action
 ;---------------------------
 RULES
-    FDB NEVER, PASS                 ; do nothing test rule
+    ; FDB NEVER, PASS                 ; do nothing test rule
     FDB ALWAYS, SET_ITEMS_DEFAULT   ; set base inventory limit
     FDB HAVE_SACK, SET_ITEMS_SACK   ; sack gives more items
     FDB HAVE_PACK, SET_ITEMS_PACK   ; backpack gives even more
@@ -1274,11 +1312,16 @@ RULES
 ;---------------------------
 ; Vars and structures
 ;---------------------------
-    ITEM_LIMIT FCB 0    ; limit of items carried 
+    ITEM_LIMIT FCB 0    ; limit of items carried, modified by rules
     ROOM FCB 0          ; current room number
     MOVE_COUNT FDB 0    ; total number of moves
     DARK FCB 0          ; true if dark
+
+    ; player stats
     HEALTH FCB 100      ; current HP
+    ; ATTACK FCB 0        ; attack damage
+    ; DEFENSE FCB 0       ; defence rating
+
     SCORE FDB 0         ; score achieved
 
     END START
