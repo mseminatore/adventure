@@ -834,6 +834,7 @@ INCLUDE "math.inc"
     RD43 FCZ "YOU ARE IN A KITCHEN. THERE IS A DUMBWAITER IN THE CORNER."
     RD46 FCZ "YOU ARE IN A SMALL WORKROOM. A WOODEN BENCH IS ON THE SOUTH WALL."
     RD56 FCZ "YOU ARE IN A SMALL STOREROOM. IT SMELLS LIKE ROTTEN CHEESE."
+    RD63 FCZ "YOU ARE IN A SMALL STOREROOM. IT SMELLS LIKE SOUR WINE."
 
     ;---------------------------
     ; Decorator descriptions
@@ -995,7 +996,7 @@ DECORATIONS
     FDB NOSO FCB 44
     FDB NOSO FCB 45
     FDB NOSO FCB 47
-    
+
     FDB NULL    ; end of table
 
 ;---------------------------
@@ -1230,6 +1231,34 @@ ROOMS
     ; room 56
     FDB RD56
     FCB 55, -1, -1, -1
+
+    ; room 57
+    FDB CELLAR
+    FCB -1, -1, 58, 50
+
+    ; room 58
+    FDB CELLAR
+    FCB -1, 59, -1, 57
+
+    ; room 59
+    FDB CELLAR
+    FCB 58, 60, -1, -1
+
+    ; room 60
+    FDB CELLAR
+    FCB 59, -1, 61, -1
+
+    ; room 61
+    FDB CELLAR
+    FCB -1, 62, -1, 60
+
+    ; room 62
+    FDB CELLAR
+    FCB 61, 63, -1, -1
+
+    ; room 64
+    FDB RD63
+    FCB 62, -1, -1, -1
 
 ;---------------------------
 ; Rules table
