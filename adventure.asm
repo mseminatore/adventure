@@ -865,8 +865,8 @@ INCLUDE "math.inc"
     FLASHLIGHT FCZ "FLASHLIGHT"
     BUCKET FCZ "BUCKET"
     RING FCZ "RING"
-    ROPE FVZ "ROPE"
-    
+    ROPE FCZ "ROPE"
+
 ;---------------------------
 ; Item table
 ; Format: description, room
