@@ -864,7 +864,9 @@ INCLUDE "math.inc"
     HAMMER FCZ "HAMMER"
     FLASHLIGHT FCZ "FLASHLIGHT"
     BUCKET FCZ "BUCKET"
-
+    RING FCZ "RING"
+    ROPE FVZ "ROPE"
+    
 ;---------------------------
 ; Item table
 ; Format: description, room
@@ -1091,7 +1093,7 @@ RULES
     FDB ALWAYS, SET_ITEMS_DEFAULT   ; set base inventory limit
     FDB HAVE_SACK, SET_ITEMS_SACK   ; sack gives more items
     FDB HAVE_PACK, SET_ITEMS_PACK   ; backpack gives even more
-    FDB NULL
+    FDB NULL                        ; end of table
 
 ;---------------------------
 ; Vars and structures
