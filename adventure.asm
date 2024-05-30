@@ -839,6 +839,8 @@ INCLUDE "math.inc"
     RD63 FCZ "YOU ARE IN A SMALL STOREROOM. IT SMELLS LIKE SOUR WINE."
     RD65 FCZ "YOU ARE IN A DINING ROOM."
     RD70 FCZ "YOU ARE IN A SITTING ROOM."
+    RD74 FCZ "YOU ARE IN THE MASTER BEDROOM."
+    RD75 FCZ "YOU ARE ON A BALCONY. YOU ARE A LONG WAY UP! FOG OBSCURES THE SURROUNDING AREA. THE AIR SMELLS DAMP."
 
     ;---------------------------
     ; Decorator descriptions
@@ -882,6 +884,7 @@ INCLUDE "math.inc"
     BLUE_KEY FCZ "BLUE KEY"
     GREEN_KEY FCZ "GREEN KEY"
     GOLD_KEY FCZ "GOLD KEY"
+    PLAT_KEY FCZ "PLATINUM KEY"
     SILVER_KEY FCZ "SILVER KEY"
     BROWN_BOOK FCZ "LEATHER BOOK"
     SMALL_SACK FCZ "SMALL SACK"
@@ -895,6 +898,9 @@ INCLUDE "math.inc"
     BUCKET FCZ "BUCKET"
     RING FCZ "RING"
     ROPE FCZ "ROPE"
+    SKULL FCZ "SKULL"
+    LEAD_BAR FCZ "LEAD BAR"
+    STICK FCZ "STICK"
 
 ;---------------------------
 ; Item table
@@ -1296,7 +1302,23 @@ ROOMS
 
     ; room 71
     FDB HALL
-    FCB -1,-1,29,-1
+    FCB -1,-1,29,72
+
+    ; room 72
+    FDB HALL
+    FCB 73,-1, 71,-1
+
+    ; room 73
+    FDB HALL
+    FCB 74, 72, -1, -1
+
+    ; room 74
+    FDB RD74
+    FCB 75, 73, -1,-1
+
+    ; room 75
+    FDB RD75
+    FCB -1, 74, -1,-1
 
 ;---------------------------
 ; Rules table
