@@ -9,7 +9,8 @@ all: $(TARGET)
 
 $(TARGET): $(SRC) $(DEPS)
 	as09 $(ASMFLAGS) -o $@ $(SRC)
-	dsk_del $@ $(DSKFILE) || dsk_add $@ $(DSKFILE)
+	dsk_del $@ $(DSKFILE)
+	dsk_add $@ $(DSKFILE)
 
 new:
 	dsk_new $(DSKFILE)

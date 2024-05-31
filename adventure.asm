@@ -1138,7 +1138,7 @@ ROOMS
 
     ; room 29
     FDB RD29
-    FCB -1, 28, -1, -1
+    FCB -1, 28, 64, 71
 
     ; room 30
     FDB CELLAR
@@ -1272,9 +1272,13 @@ ROOMS
     FDB CELLAR
     FCB 61, 63, -1, -1
 
-    ; room 64
+    ; room 63
     FDB RD63
     FCB 62, -1, -1, -1
+
+    ; room 64
+    FDB HALL
+    FCB -1, -1, 65, 29
 
     ; room 65
     FDB RD65
