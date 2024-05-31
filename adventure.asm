@@ -184,16 +184,16 @@ INV01
     BEQ INV04           ; if yes...
 
     LDA ITEM_LOC_OFFSET, Y  ; get item loc
-    CMPA #CARRYING           ; in the pack?
+    CMPA #CARRYING          ; in the pack?
     BNE INV03               ; if not...
 
     CMPB #0                 ; is this the first item?
     BEQ INV02               ; if so...
 
-    PSHS X
-    LDX #PACK_GLUE_MSG
-    JSR PUTS
-    PULS X
+    PSHS X                  ; save item description ptr
+    LDX #PACK_GLUE_MSG      ; get message ptr
+    JSR PUTS                ; print it
+    PULS X                  ; restore item description ptr
 
 INV02
     LDA #'A'
@@ -567,14 +567,17 @@ MOVE
     CMPA #-1                ; is invalid?
     BEQ MOVE_ERR            ; if so show err message
 
-    ORCC #FLAG_C        ; set carry
+    ; ORCC #FLAG_C        ; set carry
+    SETC                ; set carry
     STA ROOM            ; otherwise update room
     PULS A, X, PC
 
 MOVE_ERR
     LDX #NOMOVE         ; print move err msg
     JSR PUTS
-    ANDCC #~FLAG_C      ; clear carry
+
+    ; ANDCC #~FLAG_C      ; clear carry
+    CLRC                ; clear carry
 
     PULS A, X, PC
 
@@ -770,18 +773,18 @@ INCLUDE "math.inc"
 
     ; CURSOR FCC "!/-\"
 
-    UNKCMD FCC "I DON'T UNDERSTAND! TRY AGAIN?" FCB CR, CR, EOS
+    UNKCMD FCC "I DON'T UNDERSTAND! TRY AGAIN?\r\r"
 
     WELCOME_MSG1 FCZ "\r\r\r\r  WELCOME TO mystery mansion!\r\r           A GAME BY\r  MARK AND MATTHEW SEMINATORE\r\r      COPYRIGHT (C) 2024\r      ALL RIGHTS RESERVED."
 
-    NOMOVE FCC "YOU CAN'T GO THAT WAY!" FCB CR, CR, EOS
+    NOMOVE FCC "YOU CAN'T GO THAT WAY!\r\r"
 
     DIED FCZ "YOU HAVE died! TRY AGAIN.\r\r"
 
-    NORTH_MOVE FCC "YOU MOVE TO THE NORTH." FCB CR, CR, EOS
-    SOUTH_MOVE FCC "YOU MOVE TO THE SOUTH." FCB CR, CR, EOS
-    EAST_MOVE FCC "YOU MOVE TO THE EAST." FCB CR, CR, EOS
-    WEST_MOVE FCC "YOU MOVE TO THE WEST." FCB CR, CR, EOS
+    NORTH_MOVE FCC "YOU MOVE TO THE NORTH.\r\r"
+    SOUTH_MOVE FCC "YOU MOVE TO THE SOUTH.\r\r"
+    EAST_MOVE FCC "YOU MOVE TO THE EAST.\r\r"
+    WEST_MOVE FCC "YOU MOVE TO THE WEST.\r\r"
 
     ROOM_MSG FCZ "ROOM "
     MOVE_MSG FCZ "MOVES "
@@ -901,6 +904,7 @@ INCLUDE "math.inc"
     SKULL FCZ "SKULL"
     LEAD_BAR FCZ "LEAD BAR"
     STICK FCZ "STICK"
+    BROOM FCZ "BROOM"
 
 ;---------------------------
 ; Item table
@@ -911,19 +915,25 @@ ITEMS
     FDB BLUE_KEY FCB 13
     FDB GREEN_KEY FCB 8
     FDB GOLD_KEY FCB 14
+    ; FDB PLAT_KEY FCB 0
     FDB SILVER_KEY FCB 21
     FDB BROWN_BOOK FCB 24
+    FDB SMALL_SACK FCB 0
+    FDB BACKPACK FCB 65
     FDB MOP FCB 0
     FDB BLEACH FCB 0
-    FDB BACKPACK FCB 65
-    FDB SMALL_SACK FCB 0
-    FDB HAMMER FCB 46
     FDB CHEESE FCB 56
     FDB WINE FCB 63
+    FDB HAMMER FCB 46
+    ; FDB FLASHLIGHT FCB 0
     FDB BUCKET FCB 33
     FDB RING FCB 65
     FDB ROPE FCB 43
-    ; FDB FLASHLIGHT FCB 0
+    ; FDB SKULL FCB 0
+    ; FDB LEAD_BAR FCB 0
+    ; FDB STICK FCB 0
+    ; FDB BROOM FCB 0
+
     FDB NULL    ; end of table
 
 ;---------------------------
@@ -1014,6 +1024,11 @@ DECORATIONS
     FDB NOSO FCB 69
 
     FDB NULL    ; end of table
+
+;---------------------------
+; Doors
+; States: open/closed, lock/unlock
+;---------------------------
 
 ;---------------------------
 ; Room table
