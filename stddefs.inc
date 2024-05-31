@@ -4,12 +4,12 @@
     CHAROUT EQU $A002
     CHARIN  EQU $A000
 
-    ;--------------
+    ;--------------------
     ; Hardware registers
-    ;--------------
-    PIA0 EQU $FF00      ; peripheral interface adaptor 0
-    PIA1 EQU $FF20      ; peripheral interface adaptor 1
-    SAMREG EQU $FFC0    ; SAM control register
+    ;--------------------
+    PIA0    EQU $FF00   ; peripheral interface adaptor 0
+    PIA1    EQU $FF20   ; peripheral interface adaptor 1
+    SAMREG  EQU $FFC0   ; SAM control register
     
     ;--------------
     ; int vectors
@@ -38,6 +38,7 @@
     ; common char defs
     ;------------------
     BS      EQU 8
+    TAB     EQU 9
     CR      EQU 13
     SPACE   EQU 32
     EOS     EQU 0
@@ -48,11 +49,11 @@
     ;------------------
     ; memory locations
     ;------------------
-    RSTFLG EQU $71
-    VIDRAM EQU $400
-    VIDEND EQU $5FF
-    VIDSCROLL EQU $5E0
-    RAMEND EQU $7FFF
-    STACKSIZE EQU 256
-    STACKGUARD EQU 16
-    STACKEND EQU RAMEND - STACKSIZE
+    RSTFLG      EQU $71
+    VIDRAM      EQU $400
+    VIDEND      EQU $5FF
+    VIDSCROLL   EQU $5E0
+    RAMEND      EQU $7FFF
+    STACKSIZE   EQU 256
+    STACKGUARD  EQU 16
+    STACKEND    EQU RAMEND - STACKSIZE
