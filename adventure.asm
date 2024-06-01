@@ -552,13 +552,6 @@ GET_ROOM_PTR
     LEAX D, Y       ; get record for current room
     PULS A, B, Y, PC
 
-;
-FALL_ACTION
-    PSHS X
-    LDX #FALL_MSG
-    JSR PUTS
-    PULS X, PC
-
 ;---------------------------------
 ; Check for room transition action
 ;
@@ -601,27 +594,31 @@ CHECK_TRANSITION_DONE
 ; Return: none
 ;-------------------------
 MOVE
-    PSHS A, X
+    PSHS A, X, Y
 
+    PSHS X                  ; save X
     JSR GET_ROOM_PTR        ; get current room ptr
-    LEAX ROOM_MOVE_OFFSET,X ; inc ptr to move tbl
-    LDA B, X                ; get next room
+    TFR X, Y                ; move room ptr to Y
+    PULS X                  ; restore X
+
+    LEAY ROOM_MOVE_OFFSET,Y ; inc ptr to move tbl
+    LDA B, Y                ; get next room
     CMPA #-1                ; is invalid?
     BEQ MOVE_ERR            ; if so show err message
 
+    JSR PUTS                ; print move message
     JSR CHECK_TRANSITION    ; check for any movement transition actions
 
     STA ROOM            ; otherwise update room
     SETC                ; set carry
-    PULS A, X, PC
+    PULS A, X, Y, PC
 
 MOVE_ERR
     LDX #NOMOVE         ; print move err msg
     JSR PUTS
 
     CLRC                ; clear carry
-
-    PULS A, X, PC
+    PULS A, X, Y, PC
 
 ;-------------------------
 ; try move to north
@@ -629,13 +626,8 @@ MOVE_ERR
 NORTH
     PSHS B, X
     LDB #0
-    JSR MOVE
-    BCC NORTH_DONE
-
     LDX #NORTH_MOVE
-    JSR PUTS
-
-NORTH_DONE
+    JSR MOVE
     PULS B, X, PC
 
 ;-------------------------
@@ -644,13 +636,8 @@ NORTH_DONE
 SOUTH
     PSHS B, X
     LDB #1
-    JSR MOVE
-    BCC SOUTH_DONE
-
     LDX #SOUTH_MOVE
-    JSR PUTS
-
-SOUTH_DONE
+    JSR MOVE
     PULS B, X, PC
 
 ;-------------------------
@@ -659,13 +646,8 @@ SOUTH_DONE
 EAST
     PSHS B, X
     LDB #2
-    JSR MOVE
-    BCC EAST_DONE
-
     LDX #EAST_MOVE
-    JSR PUTS
-
-EAST_DONE
+    JSR MOVE
     PULS B, X, PC
 
 ;-------------------------
@@ -674,13 +656,8 @@ EAST_DONE
 WEST
     PSHS B, X
     LDB #3
-    JSR MOVE
-    BCC WEST_DONE
-
     LDX #WEST_MOVE
-    JSR PUTS
-
-WEST_DONE
+    JSR MOVE
     PULS B, X, PC
 
 ;-------------------------
@@ -800,6 +777,36 @@ DBG_ITEMS
 
     PULS A, X, PC
 
+;---------------------------------
+;
+;---------------------------------
+DW_ENTER_ACTION
+    PSHS X
+    LDX #DW1_MSG
+    JSR PUTS
+    PULS X, PC
+
+;---------------------------------
+;
+;---------------------------------
+DW_EXIT_ACTION
+    PSHS X
+    LDX #DW2_MSG
+    JSR PUTS
+    PULS X, PC
+
+;---------------------------------
+;
+;---------------------------------
+FALL_ACTION
+    PSHS A, X
+    LDX #FALL_MSG
+    JSR PUTS
+    LDA HEALTH      ; get current health
+    SUBA #20
+    STA HEALTH
+    PULS A, X, PC
+
 ;------------------------------------
 ; Include various function libraries
 ;------------------------------------
@@ -835,7 +842,9 @@ INCLUDE "math.inc"
 
     NOITEMS FCZ "NOTHING!\r\r"
 
-    FALL_MSG FCZ "YOU FALL INTO THE HOLE!"
+    FALL_MSG FCZ "YOU FALL INTO THE HOLE! IT IS A LONG WAY DOWN.\r\r"
+    DW1_MSG FCZ "AS YOU ENTER THE DUMBWAITER IT STARTS TO MOVE UPWARDS RAPIDLY! EVENTUALLY IT STOPS. YOU MUST BE SEVERAL FLOORS UP.\r\r"
+    DW2_MSG FCZ "AS YOU EXIT THE DUMBWAITER THE SUPPORT ROPE BREAKS AND IT FALLS OUT OF SIGHT. YOU HEAR IT CRASH SOMEWHERE FAR BELOW.\r\r"
 
     PACK_MSG FCZ "YOU ARE CARRYING: "
     END_MSG FCZ ".\r\r"
@@ -888,7 +897,7 @@ INCLUDE "math.inc"
     RD70 FCZ "YOU ARE IN A SITTING ROOM."
     RD74 FCZ "YOU ARE IN A SOLARIUM. DIFFUSE LIGHT ENTERS FROM MANY TALL WINDOWS. AN OPEN DOOR TO THE LEADS TO A BALCONY."
     RD75 FCZ "YOU ARE ON A BALCONY. YOU ARE A LONG WAY UP! FOG OBSCURES THE SURROUNDING AREA. THE AIR IS COLD AND SMELLS DAMP."
-    RD76 FCZ "YOU ENTER THE DUMBWAITER. IT STARTS TO MOVE RADPIDLY UPWARDS! EVENTUALLY IT SUDDENLY STOPS. YOU MUST BE SEVERAL FLOORS UP."
+    RD76 FCZ "YOU ARE IN THE DUMBWAITER."
     RD77 FCZ "YOU ARE IN A BUTLERS PANTRY. WAIST HIGH COUNTERS LINE THE NORTH AND SOUTH WALLS."
     RD79 FCZ "YOU ARE IN A LARGE ORNATE DINING ROOM. A LARGE TABLE IS SURROUNDED BY CHAIRS."
     RD80 FCZ "YOU ARE IN A HUGE BALLROOM."
@@ -1427,8 +1436,9 @@ ROOMS
 ; Format: action, from, to
 ;---------------------------------
 TRANSITIONS
-    FDB PASS FCB 43, 76
+    FDB DW_ENTER_ACTION FCB 43, 76
     FDB FALL_ACTION FCB 5, 14
+    FDB DW_EXIT_ACTION FCB 76, 77
     FDB NULL    ; end of table
 
 ;---------------------------
