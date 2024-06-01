@@ -552,10 +552,52 @@ GET_ROOM_PTR
     LEAX D, Y       ; get record for current room
     PULS A, B, Y, PC
 
+;
+FALL_ACTION
+    PSHS X
+    LDX #FALL_MSG
+    JSR PUTS
+    PULS X, PC
+
+;---------------------------------
+; Check for room transition action
+;
+; Input: new room in A
+; Return: none
+;---------------------------------
+CHECK_TRANSITION
+    PSHS A, X, Y
+
+    LDY #TRANSITIONS        ; get ptr to transitions table
+    LDB ROOM                ; get current room
+
+CHECK_TRANSITION01
+    LDX ,Y                      ; get action ptr
+    CMPX #NULL                  ; is it nullptr?
+    BEQ CHECK_TRANSITION_DONE   ; if so we are done
+
+    CMPB TRANSITION_FROM, Y     ; see if we find a FROM that matches
+    BEQ CHECK_TRANSITION03      ; if so check the TO
+
+CHECK_TRANSITION02
+
+    LEAY TRANSITION_SIZE, Y     ; get next table entry
+    BRA CHECK_TRANSITION01      ; do it again
+
+    ; then look for to that matches
+CHECK_TRANSITION03
+    CMPA TRANSITION_TO, Y       ; does TO match?
+    BNE CHECK_TRANSITION02      ; if not go to next item
+
+    JSR [,Y]                    ; execution action
+
+CHECK_TRANSITION_DONE
+    PULS A, X, Y, PC
+
 ;-------------------------
 ; Try to move in given dir
 ;
-; Input: move dir in B
+; Input: move dir in B, move message ptr in X
 ; Return: none
 ;-------------------------
 MOVE
@@ -567,16 +609,16 @@ MOVE
     CMPA #-1                ; is invalid?
     BEQ MOVE_ERR            ; if so show err message
 
-    ; ORCC #FLAG_C        ; set carry
-    SETC                ; set carry
+    JSR CHECK_TRANSITION    ; check for any movement transition actions
+
     STA ROOM            ; otherwise update room
+    SETC                ; set carry
     PULS A, X, PC
 
 MOVE_ERR
     LDX #NOMOVE         ; print move err msg
     JSR PUTS
 
-    ; ANDCC #~FLAG_C      ; clear carry
     CLRC                ; clear carry
 
     PULS A, X, PC
@@ -792,6 +834,8 @@ INCLUDE "math.inc"
     START_MSG FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. YOU MUST FIND YOUR WAY OUT. "
 
     NOITEMS FCZ "NOTHING!\r\r"
+
+    FALL_MSG FCZ "YOU FALL INTO THE HOLE!"
 
     PACK_MSG FCZ "YOU ARE CARRYING: "
     END_MSG FCZ ".\r\r"
@@ -1377,6 +1421,15 @@ ROOMS
     ; room 82
     FDB HALL
     FCB -1, -1, -1, -1
+
+;---------------------------------
+; transition table
+; Format: action, from, to
+;---------------------------------
+TRANSITIONS
+    FDB PASS FCB 43, 76
+    FDB FALL_ACTION FCB 5, 14
+    FDB NULL    ; end of table
 
 ;---------------------------
 ; Rules table

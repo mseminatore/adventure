@@ -20,5 +20,10 @@
     RULE_SIZE EQU 4             ; size of rule table entry
     RULE_ACTIOM_OFFSET EQU 2    ; offset to rule action
 
-    DECORATOR_SIZE EQU 3
-    DECORATOR_ROOM_OFFSET EQU 2
+    DECORATOR_SIZE EQU 3        ; size of decorator table entry
+    DECORATOR_ROOM_OFFSET EQU 2 ; offset to room num
+
+    TRANSITION_SIZE EQU 4       ; size of transition table entry
+    TRANSITION_FROM EQU 2       ; offset to FROM
+    TRANSITION_TO   EQU 3       ; offset to TO
+    
