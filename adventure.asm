@@ -1,8 +1,9 @@
-;[]******************************************************[]
-; Text adventure
+;[]---------------------------------------------------------[]
+; Mystery Mansion. A work of interactive fiction inspired by
+; the classic text adventure games
 ;
-; Copyright 2024 by Mark Seminatore. All rights reserved.
-;[]******************************************************[]
+; Copyright (C) 2024 by Mark Seminatore. All rights reserved.
+;[]---------------------------------------------------------[]
     INCLUDE "stddefs.inc"
     INCLUDE "gamedefs.inc"
 
@@ -587,12 +588,12 @@ CHECK_TRANSITION03
 CHECK_TRANSITION_DONE
     PULS A, X, Y, PC
 
-;-------------------------
+;---------------------------------------------
 ; Try to move in given dir
 ;
 ; Input: move dir in B, move message ptr in X
 ; Return: none
-;-------------------------
+;----------------------------------------------
 MOVE
     PSHS A, X, Y
 
@@ -778,7 +779,7 @@ DBG_ITEMS
     PULS A, X, PC
 
 ;---------------------------------
-;
+; Enter dumbwaiter action
 ;---------------------------------
 DW_ENTER_ACTION
     PSHS X
@@ -787,7 +788,7 @@ DW_ENTER_ACTION
     PULS X, PC
 
 ;---------------------------------
-;
+; Exit dumbwaiter action
 ;---------------------------------
 DW_EXIT_ACTION
     PSHS X
@@ -796,14 +797,14 @@ DW_EXIT_ACTION
     PULS X, PC
 
 ;---------------------------------
-;
+; Fall in hole action
 ;---------------------------------
 FALL_ACTION
     PSHS A, X
     LDX #FALL_MSG
     JSR PUTS
     LDA HEALTH      ; get current health
-    SUBA #20
+    SUBA #FALL_DMG
     STA HEALTH
     PULS A, X, PC
 
@@ -1086,13 +1087,24 @@ DECORATIONS
     FDB NOWE FCB 67
     FDB NOSO FCB 68
     FDB NOSO FCB 69
+    FDB SUD FCB 70
+    FDB EAWE FCB 71
+    FDB NOEA FCB 72
+    FDB NOSO FCB 73
+    FDB NOSO FCB 74
+    FDB SUD FCB 75
+    FDB EST FCB 77
+    FDB EAWE FCB 78
+    FDB NOWE FCB 79
+    FDB NOEA FCB 80
+    FDB SUD FCB 81
 
     FDB NULL    ; end of table
 
-;---------------------------
+;----------------------------------
 ; Doors
 ; States: open/closed, lock/unlock
-;---------------------------
+;----------------------------------
 
 ;---------------------------
 ; Room table

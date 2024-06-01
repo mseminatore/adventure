@@ -26,4 +26,5 @@
     TRANSITION_SIZE EQU 4       ; size of transition table entry
     TRANSITION_FROM EQU 2       ; offset to FROM
     TRANSITION_TO   EQU 3       ; offset to TO
-    
+
+    FALL_DMG EQU 20             ; damage taken from falling
