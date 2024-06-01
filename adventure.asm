@@ -1023,7 +1023,9 @@ CMDS
     FCC "CL" FDB PASS           ; close door
     FCC "HE" FDB HEALTH_CMD     ; display health
     FCC "SC" FDB SCORE_CMD      ; display score
-
+    FCC "US" FDB PASS           ; use an object
+    FCC "PU" FDB PASS           ; place an object
+    
     ; debug commands
     FCC "RO" FDB DBG_ROOM
     FCC "HO" FDB DBG_HOME
