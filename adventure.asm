@@ -171,7 +171,7 @@ CHECK_ITEMS_DONE
 ; Input: none
 ; Return: none
 ;----------------------------
-INVENTORY
+INVENTORY_CMD
     PSHS A, B, X, Y
 
     LDY #ITEMS          ; get items table ptr
@@ -288,12 +288,12 @@ COUNT_ITEMS02
 COUNT_ITEMS_DONE
     PULS B, X, Y, PC
 
-;----------------------------
+;---------------------------------
 ; Search for item
 ;
 ; Input: item first two char in X
 ; Return: item ptr in Y or NULL
-;----------------------------
+;---------------------------------
 GET_ITEM_PTR
     PSHS D, X
 
@@ -324,7 +324,7 @@ GET_CMD
 
     JSR COUNT_ITEMS ; how many items do we have?
     CMPA ITEM_LIMIT ; compare it to our limit
-    BEQ GET04       ; if so print msg and quit
+    BEQ GET02      ; if so print msg and quit
 
     LDX #INBUF      ; get input buffer
 
@@ -334,22 +334,16 @@ GET_CMD
     JSR SKIP_SPACES
 
     CMPX #NULL      ; no more words?
-    BEQ GET03
+    BEQ GET01
 
-    LDX ,X          ; get first two chars of word
-    LDY #ITEMS      ; get items table ptr
-
-GET01
-    LDD ,Y          ; get item description ptr
-    CMPD #NULL
-    BEQ GET05
-
-    CMPX [,Y]       ; see if item matches
-    BNE GET02       ; if not...
+    LDX ,X              ; get first two chars of word
+    JSR GET_ITEM_PTR    ; find item
+    CMPY #NULL          ; item found?
+    BEQ GET03           ; if not, print not found
 
     LDA ITEM_LOC_OFFSET,Y   ; get item loc
     CMPA ROOM               ; in current room?
-    BNE GET02               ; if not...
+    BNE GET03               ; if not...
 
     LDA #CARRYING
     STA ITEM_LOC_OFFSET,Y   ; put item in pack
@@ -357,21 +351,17 @@ GET01
     JSR PUTS
     BRA GET_DONE            ; finished!
 
-GET02
-    LEAY ITEM_SIZE, Y       ; get next item ptr
-    BRA GET01
-
-GET03
+GET01
     LDX #GETWHAT            ; print can't find item
     JSR PUTS
     BRA GET_DONE
 
-GET04
+GET02
     LDX #PACK_FULL
     JSR PUTS
     BRA GET_DONE
 
-GET05
+GET03
     LDX #THEREISNO
     JSR PUTS
     
@@ -391,19 +381,13 @@ DROP_CMD
 
     JSR SKIP_SPACES
 
-    CMPX #NULL      ; no more words?
-    BEQ DROP03
+    CMPX #NULL          ; no more words?
+    BEQ DROP01
 
-    LDX ,X          ; get first two chars of word
-    LDY #ITEMS      ; get items table ptr
-
-DROP01
-    LDD ,Y          ; get item description ptr
-    CMPD #NULL      ; if NULL we are at end of list
-    BEQ DROP03
-
-    CMPX [,Y]       ; see if item matches
-    BNE DROP02      ; if not...
+    LDX ,X              ; get first two chars of word
+    JSR GET_ITEM_PTR    ; find item
+    CMPY #NULL          ; item found?
+    BEQ DROP02          ; if not, print not found
 
     LDA ITEM_LOC_OFFSET,Y   ; get item loc
     CMPA #CARRYING          ; carrying it?
@@ -415,12 +399,13 @@ DROP01
     JSR PUTS
     BRA DROP_DONE
 
-DROP02
-    LEAY ITEM_SIZE, Y   ; get next item
-    BRA DROP01
-
-DROP03
+DROP01
     LDX #DROPWHAT
+    JSR PUTS
+    BRA DROP_DONE
+
+DROP02
+    LDX #DONT_HAVE_MSG
     JSR PUTS
 
 DROP_DONE
@@ -940,7 +925,7 @@ INCLUDE "math.inc"
 
     READ_WHAT_MSG FCZ "READ WHAT?\r\r"
     DEFAULT_READ_MSG FCZ "NOTHING OF NOTE.\r\r"
-    IT_SAYS FCZ "IT SAYS: "
+    IT_SAYS FCZ "IT SAYS..."
 
     ITEM_MSG1 FCZ " THERE IS A "
     ITEM_MSG2 FCZ " HERE."
@@ -957,6 +942,9 @@ INCLUDE "math.inc"
     SCORE_START FCZ "YOUR SCORE IS "
 
     BROWN_BOOK_READ FCZ "OZYMANDIAS BY PERCY SHELLEY. INSIDE ALL PAGES ARE ILLEGIBLE EXCEPT...\"MY NAME IS OZYMANDIAS, KING OF KINGS; LOOK ON MY WORKS, YE MIGHTY, AND DESPAIR!\"\r\r"
+    ACME_READ FCZ "MFGD. BY ACME, INC.\r\r"
+    USE_BY_READ FCZ "BEST BY SEPTEMBER 1980\r\r"
+    DO_NOT_DRINK_READ FCZ "TOXIC, DO NOT DRINK!\r\r"
 
     ; MATCH FCZ "Match!\r\r"
     ; ALWAYS_MSG FCZ "ALWAYS!\r"
@@ -1077,9 +1065,9 @@ ITEMS
     FDB BROWN_BOOK FCB 24 FDB BROWN_BOOK_READ
     FDB SMALL_SACK FCB 0 FDB NULL
     FDB BACKPACK FCB 65 FDB NULL
-    FDB MOP FCB 0 FDB NULL
-    FDB BLEACH FCB 0 FDB NULL
-    FDB CHEESE FCB 56 FDB NULL
+    FDB MOP FCB 0 FDB ACME_READ
+    FDB BLEACH FCB 0 FDB DO_NOT_DRINK_READ
+    FDB CHEESE FCB 56 FDB USE_BY_READ
     FDB WINE FCB 63 FDB NULL
     FDB HAMMER FCB 46 FDB NULL
     ; FDB FLASHLIGHT FCB 0
@@ -1104,8 +1092,8 @@ CMDS
     FCC "EA" FDB EAST
     FCC "WE" FDB WEST
     FCC "QU" FDB RESET          ; quit game
-    FCC "IN" FDB INVENTORY      ; display inventory
-    FCC "PA" FDB INVENTORY      ; display inventory
+    FCC "IN" FDB INVENTORY_CMD      ; display inventory
+    FCC "PA" FDB INVENTORY_CMD      ; display inventory
     FCC "OP" FDB PASS           ; open door
     FCC "DR" FDB DROP_CMD       ; drop an object
     FCC "GE" FDB GET_CMD        ; get an objectø
@@ -1118,6 +1106,7 @@ CMDS
     FCC "US" FDB PASS           ; use an object
     FCC "PU" FDB PASS           ; place an object
     FCC "RE" FDB READ_CMD       ; read a message
+    FCC "EX" FDB READ_CMD
 
     ; debug commands
     FCC "RO" FDB DBG_ROOM
