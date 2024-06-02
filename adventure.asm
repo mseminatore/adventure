@@ -394,6 +394,43 @@ DROP_DONE
     PULS D, X, PC
 
 ;----------------------------
+; Try to read an item
+;----------------------------
+READ
+    PSHS D, X
+
+    LDX #INBUF      ; get input buffer
+
+    LDA #SPACE      ; space delimiter
+    JSR STRCHR      ; look for spaces
+
+    JSR SKIP_SPACES
+
+    CMPX #NULL      ; no more words?
+    BEQ READ03
+
+    LDX ,X          ; get first two chars of word
+    JSR HAVE_ITEM   ; make sure we have the item
+    BNE READ02      ; if not quit
+
+    ; TODO - find message
+    ; TODO - if not, print can't read and done
+    ; TODO - otherwise print it
+    BRA READ_DONE
+
+READ02
+    LDX #DONT_HAVE_MSG
+    JSR PUTS
+    BRA READ_DONE
+
+READ03
+    LDX #READ_WHAT_MSG
+    JSR PUTS
+
+READ_DONE
+    PULS D, X, PC
+
+;----------------------------
 ; Do nothing and return!
 ;
 ; Input: none
@@ -406,14 +443,16 @@ PASS
 ; always true predicate
 ;----------------------------
 ALWAYS
-    ORCC #FLAG_Z    ; Z = 1 = true
+    ; ORCC #FLAG_Z    ; Z = 1 = true
+    SETZ
     RTS
 
 ;----------------------------
 ; never true predicate
 ;----------------------------
 NEVER
-    ANDCC #~FLAG_Z  ; z = 0 = false
+    ; ANDCC #~FLAG_Z  ; z = 0 = false
+    CLRZ
     RTS
 
 ;----------------------------
@@ -852,6 +891,9 @@ INCLUDE "math.inc"
     PACK_GLUE_MSG FCZ ", "
     PACK_FULL FCZ "YOU CAN'T CARRY ANY MORE!\r\r"
 
+    DONT_HAVE_MSG FCZ "YOU ARE'NT CARRYING IT!\r\r"
+    READ_WHAT_MSG FCZ "READ WHAT?\r\r"
+
     ITEM_MSG1 FCZ " THERE IS A "
     ITEM_MSG2 FCZ " HERE."
     THEREISNO FCZ "THERE IS NO "
@@ -1025,7 +1067,8 @@ CMDS
     FCC "SC" FDB SCORE_CMD      ; display score
     FCC "US" FDB PASS           ; use an object
     FCC "PU" FDB PASS           ; place an object
-    
+    FCC "RE" FDB READ           ; read a message
+
     ; debug commands
     FCC "RO" FDB DBG_ROOM
     FCC "HO" FDB DBG_HOME
@@ -1095,12 +1138,14 @@ DECORATIONS
     FDB NOSO FCB 73
     FDB NOSO FCB 74
     FDB SUD FCB 75
+    FDB EST FCB 76
     FDB EST FCB 77
     FDB EAWE FCB 78
-    FDB NOWE FCB 79
+    FDB NOEA FCB 79
     FDB NOEA FCB 80
     FDB SUD FCB 81
-
+    FDB NOSO FCB 82
+    
     FDB NULL    ; end of table
 
 ;----------------------------------
