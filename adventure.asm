@@ -319,7 +319,7 @@ GET_ITEM_DONE
 ;----------------------------
 ; Get an object
 ;----------------------------
-GET
+GET_CMD
     PSHS D, X, Y       ; save D and X
 
     JSR COUNT_ITEMS ; how many items do we have?
@@ -342,7 +342,7 @@ GET
 GET01
     LDD ,Y          ; get item description ptr
     CMPD #NULL
-    BEQ GET_DONE
+    BEQ GET05
 
     CMPX [,Y]       ; see if item matches
     BNE GET02       ; if not...
@@ -369,14 +369,19 @@ GET03
 GET04
     LDX #PACK_FULL
     JSR PUTS
+    BRA GET_DONE
 
+GET05
+    LDX #THEREISNO
+    JSR PUTS
+    
 GET_DONE
     PULS D, X, Y, PC
 
 ;----------------------------
 ; Drop an object
 ;----------------------------
-DROP
+DROP_CMD
     PSHS D, X, Y       ; save D and X
 
     LDX #INBUF      ; get input buffer
@@ -424,7 +429,7 @@ DROP_DONE
 ;----------------------------
 ; Try to read an item
 ;----------------------------
-READ
+READ_CMD
     PSHS D, X, Y
 
     LDX #INBUF      ; get input buffer
@@ -939,7 +944,7 @@ INCLUDE "math.inc"
 
     ITEM_MSG1 FCZ " THERE IS A "
     ITEM_MSG2 FCZ " HERE."
-    THEREISNO FCZ "THERE IS NO "
+    THEREISNO FCZ "THERE IS NO SUCH ITEM HERE.\r\r"
     GETWHAT FCZ "GET WHAT?\r\r"
     HELP_MSG FCZ "TRY VERBS LIKE: LOOK, NORTH, PACK, GET, DROP\r"
     PICKUP FCZ "YOU PICK UP THE ITEM.\r\r"
@@ -1102,9 +1107,9 @@ CMDS
     FCC "IN" FDB INVENTORY      ; display inventory
     FCC "PA" FDB INVENTORY      ; display inventory
     FCC "OP" FDB PASS           ; open door
-    FCC "DR" FDB DROP           ; drop an object
-    FCC "GE" FDB GET            ; get an objectø
-    FCC "TA" FDB GET            ; take an object
+    FCC "DR" FDB DROP_CMD       ; drop an object
+    FCC "GE" FDB GET_CMD        ; get an objectø
+    FCC "TA" FDB GET_CMD        ; take an object
     FCC "MO" FDB MOVES          ; display move count
     FCC "??" FDB PASS           ; help command
     FCC "CL" FDB PASS           ; close door
@@ -1112,7 +1117,7 @@ CMDS
     FCC "SC" FDB SCORE_CMD      ; display score
     FCC "US" FDB PASS           ; use an object
     FCC "PU" FDB PASS           ; place an object
-    FCC "RE" FDB READ           ; read a message
+    FCC "RE" FDB READ_CMD       ; read a message
 
     ; debug commands
     FCC "RO" FDB DBG_ROOM
