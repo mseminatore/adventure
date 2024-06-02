@@ -289,10 +289,38 @@ COUNT_ITEMS_DONE
     PULS B, X, Y, PC
 
 ;----------------------------
+; Search for item
+;
+; Input: item first two char in X
+; Return: item ptr in Y or NULL
+;----------------------------
+GET_ITEM_PTR
+    PSHS D, X
+
+    LDY #ITEMS      ; get items table ptr
+
+GET_ITEM01
+    LDD ,Y          ; get item description ptr
+    CMPD #NULL      ; end of table?
+    BEQ GET_ITEM_FAILED
+
+    CMPX [,Y]           ; item matches?
+    BEQ GET_ITEM_DONE   ; if so return item ptr in Y
+
+    LEAY ITEM_SIZE, Y   ; get next item ptr
+    BRA GET_ITEM01      ; check next item
+
+GET_ITEM_FAILED
+    LDY #NULL       ; return nullptr
+
+GET_ITEM_DONE
+    PULS D, X, PC
+
+;----------------------------
 ; Get an object
 ;----------------------------
 GET
-    PSHS D, X       ; save D and X
+    PSHS D, X, Y       ; save D and X
 
     JSR COUNT_ITEMS ; how many items do we have?
     CMPA ITEM_LIMIT ; compare it to our limit
@@ -343,13 +371,13 @@ GET04
     JSR PUTS
 
 GET_DONE
-    PULS D, X, PC
+    PULS D, X, Y, PC
 
 ;----------------------------
 ; Drop an object
 ;----------------------------
 DROP
-    PSHS D, X       ; save D and X
+    PSHS D, X, Y       ; save D and X
 
     LDX #INBUF      ; get input buffer
 
@@ -391,13 +419,13 @@ DROP03
     JSR PUTS
 
 DROP_DONE
-    PULS D, X, PC
+    PULS D, X, Y, PC
 
 ;----------------------------
 ; Try to read an item
 ;----------------------------
 READ
-    PSHS D, X
+    PSHS D, X, Y
 
     LDX #INBUF      ; get input buffer
 
@@ -413,9 +441,21 @@ READ
     JSR HAVE_ITEM   ; make sure we have the item
     BNE READ02      ; if not quit
 
-    ; TODO - find message
-    ; TODO - if not, print can't read and done
-    ; TODO - otherwise print it
+    JSR GET_ITEM_PTR    ; get item ptr in Y
+    CMPY #NULL          ; if item not found (shouldn't happen)
+    BEQ READ03          ; print what? message
+
+    LDX #IT_SAYS
+    JSR PUTS
+
+    LDX ITEM_READ_OFFSET, Y     ; get read text ptr
+    CMPX #NULL                  ; is it null?
+    BNE READ01
+
+    LDX #DEFAULT_READ_MSG
+
+READ01
+    JSR PUTS
     BRA READ_DONE
 
 READ02
@@ -428,7 +468,7 @@ READ03
     JSR PUTS
 
 READ_DONE
-    PULS D, X, PC
+    PULS D, X, Y, PC
 
 ;----------------------------
 ; Do nothing and return!
@@ -892,7 +932,10 @@ INCLUDE "math.inc"
     PACK_FULL FCZ "YOU CAN'T CARRY ANY MORE!\r\r"
 
     DONT_HAVE_MSG FCZ "YOU ARE'NT CARRYING IT!\r\r"
+
     READ_WHAT_MSG FCZ "READ WHAT?\r\r"
+    DEFAULT_READ_MSG FCZ "NOTHING OF NOTE.\r\r"
+    IT_SAYS FCZ "IT SAYS: "
 
     ITEM_MSG1 FCZ " THERE IS A "
     ITEM_MSG2 FCZ " HERE."
@@ -907,6 +950,8 @@ INCLUDE "math.inc"
     HEALTH_TAIL FCZ " HP LEFT.\r\r"
 
     SCORE_START FCZ "YOUR SCORE IS "
+
+    BROWN_BOOK_READ FCZ "OZYMANDIAS BY PERCY SHELLEY. INSIDE ALL PAGES ARE ILLEGIBLE EXCEPT...\"MY NAME IS OZYMANDIAS, KING OF KINGS; LOOK ON MY WORKS, YE MIGHTY, AND DESPAIR!\"\r\r"
 
     ; MATCH FCZ "Match!\r\r"
     ; ALWAYS_MSG FCZ "ALWAYS!\r"
@@ -1015,27 +1060,27 @@ INCLUDE "math.inc"
 
 ;---------------------------
 ; Item table
-; Format: description, room
+; Format: description, room, read
 ;---------------------------
 ITEMS
-    FDB RED_KEY FCB 6
-    FDB BLUE_KEY FCB 13
-    FDB GREEN_KEY FCB 8
-    FDB GOLD_KEY FCB 14
+    FDB RED_KEY FCB 6 FDB NULL
+    FDB BLUE_KEY FCB 13 FDB NULL
+    FDB GREEN_KEY FCB 8 FDB NULL
+    FDB GOLD_KEY FCB 14 FDB NULL
     ; FDB PLAT_KEY FCB 0
-    FDB SILVER_KEY FCB 21
-    FDB BROWN_BOOK FCB 24
-    FDB SMALL_SACK FCB 0
-    FDB BACKPACK FCB 65
-    FDB MOP FCB 0
-    FDB BLEACH FCB 0
-    FDB CHEESE FCB 56
-    FDB WINE FCB 63
-    FDB HAMMER FCB 46
+    FDB SILVER_KEY FCB 21 FDB NULL
+    FDB BROWN_BOOK FCB 24 FDB BROWN_BOOK_READ
+    FDB SMALL_SACK FCB 0 FDB NULL
+    FDB BACKPACK FCB 65 FDB NULL
+    FDB MOP FCB 0 FDB NULL
+    FDB BLEACH FCB 0 FDB NULL
+    FDB CHEESE FCB 56 FDB NULL
+    FDB WINE FCB 63 FDB NULL
+    FDB HAMMER FCB 46 FDB NULL
     ; FDB FLASHLIGHT FCB 0
-    FDB BUCKET FCB 33
-    FDB RING FCB 65
-    FDB ROPE FCB 43
+    FDB BUCKET FCB 33 FDB NULL
+    FDB RING FCB 65 FDB NULL
+    FDB ROPE FCB 43 FDB NULL
     ; FDB SKULL FCB 0
     ; FDB LEAD_BAR FCB 0
     ; FDB STICK FCB 0
@@ -1145,7 +1190,7 @@ DECORATIONS
     FDB NOEA FCB 80
     FDB SUD FCB 81
     FDB NOSO FCB 82
-    
+
     FDB NULL    ; end of table
 
 ;----------------------------------
@@ -1519,6 +1564,8 @@ RULES
     MOVE_COUNT FDB 0    ; total number of moves
     DARK FCB 0          ; true if dark
 
+    CMD_BUF RMB 10      ; tokenized command buffer
+    
     ; player stats
     HEALTH FCB 100      ; current HP
     ; ATTACK FCB 0        ; attack damage
