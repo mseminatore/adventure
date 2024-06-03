@@ -21,11 +21,12 @@ SETCURSOR
 ; Return: none
 ;-------------------
 WAIT
-    PSHS A, DP, Y, U
+    ; PSHS A, DP, Y, U
     JSR [CHARIN]    ; poll keyboard
     BEQ WAIT        ; wait for keypress
-    PULS A, DP, Y, U, PC
-
+    ; PULS A, DP, Y, U, PC
+    RTS
+    
 ;--------------
 ; clear screen
 ;
