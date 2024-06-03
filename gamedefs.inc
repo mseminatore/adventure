@@ -7,7 +7,7 @@
     PACK_ITEM_LIMIT EQU 6
 
     ; item ID values
-    SACK_ID EQU $534D           ; 'SA'
+    SACK_ID EQU $5341           ; 'SA'
     PACK_ID EQU $4241           ; 'PA'
 
     ; room struct
