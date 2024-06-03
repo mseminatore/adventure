@@ -21,9 +21,10 @@ SETCURSOR
 ; Return: none
 ;-------------------
 WAIT
+    PSHS A, DP, Y, U
     JSR [CHARIN]    ; poll keyboard
     BEQ WAIT        ; wait for keypress
-    RTS
+    PULS A, DP, Y, U, PC
 
 ;--------------
 ; clear screen
@@ -128,6 +129,75 @@ PUTC_DONE
     PULS A, B, X, PC
 
 ;-------------------------------------
+; Count chars in next word of string
+;
+; Input: X ptr to string
+; Return: count of chars in A
+;-------------------------------------
+CHARS_IN_WORD
+    PSHS B, X
+
+    CLRA            ; clear count
+
+CHARS_IN_WORD01
+    LDB ,X+                     ; get next char
+    CMPB #EOS                   ; reached end of string?
+    BEQ CHARS_IN_WORD_DONE      ; if so return
+
+    CMPB #SPACE                 ; found a space?
+    BEQ CHARS_IN_WORD_DONE      ; if so return
+
+    INCA
+    BRA CHARS_IN_WORD01
+
+CHARS_IN_WORD_DONE
+    PULS B, X, PC
+
+;-------------------------------------
+; Return chars left before EOL
+;
+; Input: none
+; Return: count of chars in A
+;-------------------------------------
+CHARS_LEFT
+    PSHS B, X
+
+    LDD CURPOS          ; get cursor pos
+    ANDB #31            ; get current column num
+    PSHS B              ; save on stack
+    LDA #31             ; load line length
+    SUBA ,S             ; compute chars left
+    PULS B              ; pop B off stack
+
+    PULS B, X, PC
+
+;-------------------------------------
+; See if word wrap is required
+;
+; Input: X ptr to string
+; Return: Z = 1 if wrap required
+;-------------------------------------
+WORD_WRAP
+    PSHS A
+
+    JSR CHARS_IN_WORD   ; get count of chars in next word
+    PSHS A              ; save count on stack
+
+    JSR CHARS_LEFT      ; get count of cols left
+
+    CMPA ,S             ; 
+    BLT WORD_WRAP_NEEDED
+
+    CLRZ
+    PULS A
+    PULS A, PC
+
+WORD_WRAP_NEEDED
+    SETZ
+    PULS A
+    PULS A, PC
+
+;-------------------------------------
 ; PUT A STRING ON SCREEN
 ;
 ; Input: X ptr to string
@@ -137,6 +207,13 @@ PUTS
     PSHS A, X       ; save A and X
 
 PUTS01
+    JSR WORD_WRAP   ; see if word wrap needed
+    BNE PUTS02      ; if not skip
+
+    LDA #CR
+    JSR PUTC
+
+ PUTS02   
     LDA ,X+         ; get next char
     CMPA #EOS       ; see if end of string
     BEQ PUTS_DONE   ; if so we are done
