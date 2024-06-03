@@ -320,7 +320,7 @@ GET_ITEM_DONE
 ; Get an object
 ;----------------------------
 GET_CMD
-    PSHS D, X, Y       ; save D and X
+    PSHS A, X, Y       ; save D and X
 
     JSR COUNT_ITEMS ; how many items do we have?
     CMPA ITEM_LIMIT ; compare it to our limit
@@ -366,13 +366,13 @@ GET03
     JSR PUTS
     
 GET_DONE
-    PULS D, X, Y, PC
+    PULS A, X, Y, PC
 
 ;----------------------------
 ; Drop an object
 ;----------------------------
 DROP_CMD
-    PSHS D, X, Y       ; save D and X
+    PSHS A, X, Y       ; save D and X
 
     LDX #INBUF      ; get input buffer
 
@@ -409,13 +409,13 @@ DROP02
     JSR PUTS
 
 DROP_DONE
-    PULS D, X, Y, PC
+    PULS A, X, Y, PC
 
 ;----------------------------
 ; Try to read an item
 ;----------------------------
 READ_CMD
-    PSHS D, X, Y
+    PSHS A, X, Y
 
     LDX #INBUF      ; get input buffer
 
@@ -458,7 +458,7 @@ READ03
     JSR PUTS
 
 READ_DONE
-    PULS D, X, Y, PC
+    PULS A, X, Y, PC
 
 ;----------------------------
 ; Do nothing and return!
