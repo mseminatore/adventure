@@ -15,9 +15,12 @@
 
     ; door struct
     DOOR_SIZE EQU 4
-    DOOR_DESC_OFFSET EQU 0
+    DOOR_PTR_OFFSET EQU 0
     DOOR_ROOM_OFFSET EQU 2
     DOOR_WALL_OFFSET EQU 3
+
+    DOBJ_DESC_OFFSET EQU 0
+    DOBJ_PROP_OFFSET EQU 2
     
     ; door states
     OPEN_STATE      EQU 1
