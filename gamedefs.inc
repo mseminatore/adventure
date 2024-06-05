@@ -1,5 +1,33 @@
+;------------------------------------
+; Common game defines
+;
+;------------------------------------
+
     NULL EQU 0                  ; nullptr
+
+    STARTING_HEALTH EQU 100
+
+    ; door locations
+    NORTH_WALL  EQU 0
+    SOUTH_WALL  EQU 1
+    EAST_WALL   EQU 2
+    WEST_WALL   EQU 3
+
+    ; door struct
+    DOOR_SIZE EQU 4
+    DOOR_DESC_OFFSET EQU 0
+    DOOR_ROOM_OFFSET EQU 2
+    DOOR_WALL_OFFSET EQU 3
+    
+    ; door states
+    OPEN_STATE      EQU 1
+    LOCKED_STATE    EQU 2
+
+    ; room definitions
+    ROOM_START  EQU 0
     CARRYING EQU $FF            ; item is carried
+    ROOM_DEAD   EQU 254         ; where dead players go
+    ROOM_DUMP   EQU 253         ; where broken/used items go
 
     ; item carry limits
     DEFAULT_ITEM_LIMIT EQU 2
@@ -36,4 +64,16 @@
     TRANSITION_TO   EQU 3       ; offset to TO
     TRANSITION_SIZE EQU 4       ; size of transition table entry
 
+    ; health
     FALL_DMG EQU 20             ; damage taken from falling
+    POISON_DMG EQU 20           ; damage taken from poison
+    FIRE_DMG EQU 20             ; damage take from fire
+
+    ; object properties
+    TAKEABLE    EQU 1           ; can be taken/carried
+    EATABLE     EQU 2           ; can be eaten
+    DRINKABLE   EQU 4           ; can be drunk
+    USABLE      EQU 8           ; can be used
+    OPENABLE    EQU 16          ; can be open/closed
+    LOCKABLE    EQU 32          ; can be locked/unlocked
+    

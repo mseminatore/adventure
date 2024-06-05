@@ -16,10 +16,13 @@ START
     LDB #0
     TFR B, DP       ; make sure DP is set to 0
 
+RESTART
+    JSR INIT        ; init game state
+
     ; zero out move counter
-    LDX #MOVE_COUNT
-    STB ,X+
-    STB ,X
+    ; LDX #MOVE_COUNT
+    ; STB ,X+
+    ; STB ,X
 
     JSR CLS         ; clear screen
     
@@ -31,10 +34,11 @@ START
     LDX #START_MSG  ; show start-up message
     JSR PUTS
 
-    BRA GAME_LOOP01 ; skip the initial room description
+    ; TODO - maybe remove this as confusing?
+    BRA GAME_LOOP01 ; skip the initial room description?
 
 GAME_LOOP
-    JSR LOOK                ; describe current room
+    JSR LOOK_CMD            ; describe current room
 
     JSR CHECK_DECORATIONS   ; print any room decorations
 
@@ -101,7 +105,34 @@ CHECK_DECORATIONS_DONE
 ; Return: none
 ;----------------------------
 CHECK_DOORS
-    RTS
+    PSHS A, X, Y, U
+
+    LDY #DOORS      ; get door table ptr
+    LDA ROOM
+
+CHECK_DOORS01
+    LDU ,Y                  ; get door ptr
+    CMPU #NULL              ; is it NULL?
+    BEQ CHECK_DOORS_DONE    ; if so done
+
+    CMPA DOOR_ROOM_OFFSET, Y ; is door in room?
+    BNE CHECK_DOORS02       ; if not go to next door
+
+    LDX #ITEM_MSG1          ; print 'there is a '
+    JSR PUTS
+
+    LDX ,U                  ; print door description
+    JSR PUTS
+
+    LDX #ITEM_MSG2
+    JSR PUTS
+    
+CHECK_DOORS02
+    LEAY DOOR_SIZE, Y       ; get next door ptr
+    BRA CHECK_DOORS01
+
+CHECK_DOORS_DONE
+    PULS A, X, Y, U, PC
 
 ;----------------------------
 ; Execute room rules
@@ -736,7 +767,7 @@ WEST
 ; Input: none
 ; Return: none
 ;-------------------------
-LOOK
+LOOK_CMD
     PSHS X
     JSR GET_ROOM_PTR    ; get current room ptr
     LDX ,X              ; get room description
@@ -829,7 +860,17 @@ SCORE_CMD
     PULS A, X, PC
 
 ;------------------------------------
-;
+; player dies
+;------------------------------------
+; DIE_CMD
+;     LDX #DEATH_MSG
+;     JSR PUTS
+;     JSR INIT
+;     JSR WAIT
+;     RTS
+    
+;------------------------------------
+; show item count/capacity
 ;------------------------------------
 DBG_ITEMS
     PSHS A, X
@@ -877,6 +918,27 @@ FALL_ACTION
     STA HEALTH
     PULS A, X, PC
 
+;---------------------------
+; Initialize game state
+;---------------------------
+INIT
+    PSHS D
+
+    LDA #ROOM_START
+    STA ROOM
+
+    LDD #STARTING_HEALTH
+    STD HEALTH
+    
+    CLRA
+    CLRB
+
+    STA DARK
+    STD MOVE_COUNT
+    STA SCORE
+
+    PULS D, PC
+
 ;------------------------------------
 ; Include various function libraries
 ;------------------------------------
@@ -908,7 +970,7 @@ INCLUDE "math.inc"
     ROOM_MSG FCZ "ROOM "
     MOVE_MSG FCZ "MOVES "
 
-    START_MSG FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. YOU MUST FIND YOUR WAY OUT. "
+    START_MSG FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. FIND YOUR WAY OUT.\rtype LOOK to examine room\r\r"
 
     NOITEMS FCZ "NOTHING!\r\r"
 
@@ -947,9 +1009,11 @@ INCLUDE "math.inc"
     DO_NOT_DRINK_READ FCZ "toxic, DO NOT DRINK!\r\r"
     SKULL_READ FCZ "YORICK: A FELLOW OF INFINITE JEST.\r\r"
     WINE_READ FCZ "CHATEAU STE. MICHELLE CHARDONNAY 1980\r\r"
-    RING_READ FCZ "ASH NAZG DURBATULUK, ASH NAZG GIMBATUL.\r\r"
+    RING_READ FCZ "ASH NAZG DURBATULUK, ASH NAZG GIMBATUL...\r\r"
     MELVILE_READ FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
     DANTE_READ FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
+
+    DEATH_MSG FCZ "SADLY YOU PERISH. TRY AGAIN?  hit any key\r\r"
 
     ; MATCH FCZ "Match!\r\r"
     ; ALWAYS_MSG FCZ "ALWAYS!\r"
@@ -997,6 +1061,9 @@ INCLUDE "math.inc"
     ;---------------------------
     ; Decorator descriptions
     ;---------------------------
+
+    ; doors
+    DOOR_PLAIN FCZ "DOOR"
 
     ; visual interest
     SCONCE FCZ "LIGHT FLICKERS IN A WALL SCONCE."
@@ -1067,28 +1134,28 @@ INCLUDE "math.inc"
 
 ;---------------------------
 ; Item table
-; Format: description, room, read
+; Format: description, room, read, props
 ;---------------------------
 ITEMS
-    FDB RED_KEY FCB 6 FDB NULL
-    FDB BLUE_KEY FCB 13 FDB NULL
-    FDB GREEN_KEY FCB 8 FDB NULL
-    FDB GOLD_KEY FCB 14 FDB NULL
+    FDB RED_KEY     FCB 6   FDB NULL
+    FDB BLUE_KEY    FCB 13  FDB NULL
+    FDB GREEN_KEY   FCB 8   FDB NULL
+    FDB GOLD_KEY    FCB 14  FDB NULL
     ; FDB PLAT_KEY FCB 0
-    FDB SILVER_KEY FCB 21 FDB NULL
-    FDB BROWN_BOOK FCB 24 FDB BROWN_BOOK_READ
-    FDB SMALL_SACK FCB 0 FDB NULL
-    FDB BACKPACK FCB 65 FDB NULL
-    FDB MOP FCB 0 FDB ACME_READ
-    FDB BLEACH FCB 0 FDB DO_NOT_DRINK_READ
-    FDB CHEESE FCB 56 FDB USE_BY_READ
-    FDB WINE FCB 63 FDB WINE_READ
-    FDB HAMMER FCB 46 FDB ACME_READ
+    FDB SILVER_KEY  FCB 21  FDB NULL
+    FDB BROWN_BOOK  FCB 24  FDB BROWN_BOOK_READ
+    FDB SMALL_SACK  FCB 0   FDB NULL
+    FDB BACKPACK    FCB 65  FDB NULL
+    FDB MOP         FCB 0   FDB ACME_READ
+    FDB BLEACH      FCB 0   FDB DO_NOT_DRINK_READ
+    FDB CHEESE      FCB 56  FDB USE_BY_READ
+    FDB WINE        FCB 63  FDB WINE_READ
+    FDB HAMMER      FCB 46  FDB ACME_READ
     ; FDB FLASHLIGHT FCB 0
-    FDB BUCKET FCB 33 FDB ACME_READ
-    FDB RING FCB 70 FDB RING_READ
-    FDB ROPE FCB 43 FDB NULL
-    FDB SKULL FCB 65 FDB SKULL_READ
+    FDB BUCKET      FCB 33  FDB ACME_READ
+    FDB RING        FCB 70  FDB RING_READ
+    FDB ROPE        FCB 43  FDB NULL
+    FDB SKULL       FCB 65  FDB SKULL_READ
     ; FDB LEAD_BAR FCB 0
     ; FDB STICK FCB 0
     ; FDB BROOM FCB 0
@@ -1121,6 +1188,7 @@ CMDS
     FCC "PU" FDB PASS           ; place an object
     FCC "RE" FDB READ_CMD       ; read a message
     FCC "EX" FDB READ_CMD
+    ; FCC "DI" FDB DIE_CMD        ; player dies
 
     ; debug commands
     FCC "RO" FDB DBG_ROOM
@@ -1231,9 +1299,19 @@ DECORATIONS
     FDB NULL    ; end of table
 
 ;----------------------------------
-; Doors
-; States: open/closed, lock/unlock
+; Door definitions 
+; States: desc, props
 ;----------------------------------
+DOOR1 FDB DOOR_PLAIN FCB 0
+
+;-----------------------------------
+; Room Doors
+; Props: ptr to door obj, room, wall
+;-----------------------------------
+DOORS
+    FDB DOOR1 FCB 0 FCB EAST_WALL
+    FDB DOOR1 FCB 1 FCB WEST_WALL
+    FDB NULL
 
 ;---------------------------
 ; Room table
@@ -1652,10 +1730,10 @@ RULES
     CMD_BUF RMB 10      ; tokenized command buffer
     
     ; player stats
-    HEALTH FCB 100      ; current HP
-    ; ATTACK FCB 0        ; attack damage
-    ; DEFENSE FCB 0       ; defence rating
+    HEALTH FCB STARTING_HEALTH      ; current HP
+    ; ATTACK FCB 0                  ; attack damage
+    ; DEFENSE FCB 0                 ; defence rating
 
-    SCORE FDB 0         ; score achieved
+    SCORE FDB 0                     ; score achieved
 
     END START
