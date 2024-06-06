@@ -21,7 +21,7 @@
 
     DOBJ_DESC_OFFSET EQU 0
     DOBJ_PROP_OFFSET EQU 2
-    
+
     ; door states
     OPEN_STATE      EQU 1
     LOCKED_STATE    EQU 2
@@ -79,4 +79,4 @@
     USABLE      EQU 8           ; can be used
     OPENABLE    EQU 16          ; can be open/closed
     LOCKABLE    EQU 32          ; can be locked/unlocked
-    
+    CURSED      EQU 64          ; can't be dropped
