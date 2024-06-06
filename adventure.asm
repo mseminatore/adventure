@@ -390,6 +390,10 @@ GET_CMD
     CMPA ROOM               ; in current room?
     BNE GET03               ; if not...
 
+    LDA ITEM_PROP_OFFSET,Y  ; get item prop
+    BITA #TAKEABLE           ; is item takeable?
+    BEQ GET04               ; if not...
+
     LDA #CARRYING
     STA ITEM_LOC_OFFSET,Y   ; put item in pack
     LDX #PICKUP             ; print pickup msg
@@ -409,7 +413,12 @@ GET02
 GET03
     LDX #THEREISNO
     JSR PUTS
-    
+    BRA GET_DONE
+
+GET04
+    LDX #CANT_TAKE_MSG
+    JSR PUTS
+
 GET_DONE
     PULS A, X, Y, PC
 
@@ -438,6 +447,10 @@ DROP_CMD
     CMPA #CARRYING          ; carrying it?
     BNE DROP02              ; if not...
 
+    LDA ITEM_PROP_OFFSET,Y  ; get item prop
+    BITA #CURSED            ; is item dropable?
+    BNE DROP03              ; if not...
+
     LDA ROOM                ; get current room num
     STA ITEM_LOC_OFFSET,Y   ; put item in pack
     LDX #DROPITEM           ; print item drop message
@@ -451,6 +464,11 @@ DROP01
 
 DROP02
     LDX #DONT_HAVE_MSG
+    JSR PUTS
+    BRA DROP_DONE
+
+DROP03
+    LDX #CANT_DROP_MSG
     JSR PUTS
 
 DROP_DONE
@@ -888,6 +906,7 @@ SCORE_CMD
 ;------------------------------------
 DBG_ITEMS
     PSHS A, X
+
     LDX #PACK_MSG
     JSR PUTS
     JSR COUNT_ITEMS
@@ -901,6 +920,12 @@ DBG_ITEMS
     JSR PUTC
 
     PULS A, X, PC
+
+;---------------------------------
+; goto a room
+;---------------------------------
+DBG_GOTO
+    RTS
 
 ;---------------------------------
 ; Enter dumbwaiter action
@@ -1017,6 +1042,8 @@ INCLUDE "math.inc"
     GETWHAT FCZ "GET WHAT?\r\r"
     HELP_MSG FCZ "TRY VERBS LIKE: LOOK, NORTH, PACK, GET, DROP\r"
     PICKUP FCZ "YOU PICK UP THE ITEM.\r\r"
+    CANT_TAKE_MSG FCZ "YOU CAN'T TAKE THAT!\r\r"
+    CANT_DROP_MSG FCZ "YOU CAN'T SEEM TO PART WITH IT!\r\r"
     DROPWHAT FCZ "DROP WHAT?\r\r"
     DROPITEM FCZ "YOU DROP THE ITEM.\r\r"
 
@@ -1163,25 +1190,25 @@ INCLUDE "math.inc"
 ; Format: description, room, read, props
 ;---------------------------
 ITEMS
-    FDB RED_KEY     FCB 6   FDB NULL
-    FDB BLUE_KEY    FCB 13  FDB NULL
-    FDB GREEN_KEY   FCB 8   FDB NULL
-    FDB GOLD_KEY    FCB 14  FDB NULL
+    FDB RED_KEY     FCB 6   FDB NULL FCB TAKEABLE
+    FDB BLUE_KEY    FCB 13  FDB NULL FCB TAKEABLE
+    FDB GREEN_KEY   FCB 8   FDB NULL FCB TAKEABLE
+    FDB GOLD_KEY    FCB 14  FDB NULL FCB TAKEABLE
     ; FDB PLAT_KEY FCB 0
-    FDB SILVER_KEY  FCB 21  FDB NULL
-    FDB BROWN_BOOK  FCB 24  FDB BROWN_BOOK_READ
-    FDB SMALL_SACK  FCB 65  FDB NULL
-    FDB BACKPACK    FCB 88  FDB NULL
-    FDB MOP         FCB 0   FDB ACME_READ
-    FDB BLEACH      FCB 0   FDB DO_NOT_DRINK_READ
-    FDB CHEESE      FCB 56  FDB USE_BY_READ
-    FDB WINE        FCB 63  FDB WINE_READ
-    FDB HAMMER      FCB 46  FDB ACME_READ
+    FDB SILVER_KEY  FCB 21  FDB NULL FCB TAKEABLE
+    FDB BROWN_BOOK  FCB 24  FDB BROWN_BOOK_READ FCB TAKEABLE
+    FDB SMALL_SACK  FCB 65  FDB NULL FCB TAKEABLE
+    FDB BACKPACK    FCB 88  FDB NULL FCB TAKEABLE
+    FDB MOP         FCB 0   FDB ACME_READ FCB 0
+    FDB BLEACH      FCB 0   FDB DO_NOT_DRINK_READ FCB TAKEABLE | DRINKABLE
+    FDB CHEESE      FCB 56  FDB USE_BY_READ FCB TAKEABLE | EATABLE
+    FDB WINE        FCB 63  FDB WINE_READ FCB TAKEABLE | DRINKABLE
+    FDB HAMMER      FCB 46  FDB ACME_READ FCB TAKEABLE
     ; FDB FLASHLIGHT FCB 0
-    FDB BUCKET      FCB 33  FDB ACME_READ
-    FDB RING        FCB 70  FDB RING_READ
-    FDB ROPE        FCB 0   FDB NULL
-    FDB SKULL       FCB 65  FDB SKULL_READ
+    FDB BUCKET      FCB 33  FDB ACME_READ FCB TAKEABLE
+    FDB RING        FCB 70  FDB RING_READ FCB TAKEABLE | CURSED
+    FDB ROPE        FCB 0   FDB NULL FCB TAKEABLE
+    FDB SKULL       FCB 65  FDB SKULL_READ FCB TAKEABLE
     ; FDB LEAD_BAR FCB 0
     ; FDB STICK FCB 0
     ; FDB BROOM FCB 0
@@ -1217,6 +1244,7 @@ CMDS
     ; FCC "DI" FDB DIE_CMD        ; player dies
 
     ; debug commands
+    ; FCC "GO" FDB DBG_GOTO
     FCC "RO" FDB DBG_ROOM
     FCC "HO" FDB DBG_HOME
     FCC "RP" FDB DBG_RP

@@ -14,6 +14,27 @@ SETCURSOR
 
     PULS D, PC      ; restore regs and return
 
+;---------------------------------
+; Get cursor X, Y
+;
+; Input: none
+; Return: A = row, B = col
+;---------------------------------
+GETCURSOR
+    LDD CURPOS
+    ANDB #$1F       ; col is [0..31]
+
+    ASLB            ; shot B top 3 bits into A
+    ROLA            ; the lower 4 bits of A are now row
+
+    ASLB
+    ROLA
+
+    ASLB
+    ROLA
+
+    RTS
+
 ;-------------------
 ; wait for keypress
 ;
@@ -281,6 +302,9 @@ RESET
     CLR RSTFLG          ; warm/cold reset?
     JMP [RESET_VECTOR]  ; reboot
 
+;---------------------------------
+; data variables
+;---------------------------------
     INBUF RMB 32        ; input buffer
     INCUR FDB INBUF     ; input cursor
-    CURPOS FDB VIDRAM
+    CURPOS FDB VIDRAM   ; current cursor position

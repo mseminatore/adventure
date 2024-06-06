@@ -2,6 +2,28 @@
 STRTMP_TOP
 
 ;--------------------------------
+; Convert dec string to 8b int
+;
+; Input: X ptr to str
+; Return: A is integer
+;--------------------------------
+ATOI
+    PSHS X
+
+    PULS X, PC
+
+;--------------------------------
+; Convert dec string to 8b int
+;
+; Input: X ptr to str
+; Return: D is integer
+;--------------------------------
+ATOI16
+    PSHS X
+
+    PULS X, PC
+
+;--------------------------------
 ; Print decimal byte
 ;
 ; Input: byte to print in A

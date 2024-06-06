@@ -50,9 +50,11 @@
     CMD_TABLE_ENTRY EQU 4       ; size of cmd table entry 2 + 2 = 4
     
     ; item struct
-    ITEM_SIZE EQU 5             ; size of item table entry
+    ITEM_SIZE EQU 6             ; size of item table entry
+    ITEM_DESC_OFFSET EQU 0      ; offset to desc ptr
     ITEM_LOC_OFFSET EQU 2       ; offset to item location
     ITEM_READ_OFFSET EQU 3      ; offset to item read
+    ITEM_PROP_OFFSET EQU 5      ; offset to item properties
 
     ; rule struct
     RULE_SIZE EQU 4             ; size of rule table entry
