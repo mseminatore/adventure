@@ -40,9 +40,12 @@ RESTART
     JSR PUTS
 
     ; TODO - maybe remove this as confusing?
+    JSR CHECK_RULES         ; check for rules
     BRA GAME_LOOP01 ; skip the initial room description?
 
 GAME_LOOP
+    JSR CHECK_RULES         ; check for rules
+
     JSR LOOK_CMD            ; describe current room
 
     JSR CHECK_DECORATIONS   ; print any room decorations
@@ -52,8 +55,6 @@ GAME_LOOP
     JSR CHECK_DOORS         ; print any doors
 
 GAME_LOOP01
-    JSR CHECK_RULES         ; check for rules
-
     LDA #CR         ; newlines
     JSR PUTC
 
@@ -448,8 +449,8 @@ DROP_CMD
     BNE DROP02              ; if not...
 
     LDA ITEM_PROP_OFFSET,Y  ; get item prop
-    BITA #CURSED            ; is item dropable?
-    BNE DROP03              ; if not...
+    BITA #DROPPABLE         ; is item dropable?
+    BEQ DROP03              ; if not...
 
     LDA ROOM                ; get current room num
     STA ITEM_LOC_OFFSET,Y   ; put item in pack
@@ -979,6 +980,62 @@ INIT
     PULS D, PC
 
 ;------------------------------------
+; Return ptr to first carried item
+;
+; Input: match mask in B
+; Return: ptr to item in X or NULL
+;------------------------------------
+FIRST_CARRIED_ITEM
+    PSHS A, B, Y
+    LDY #ITEMS          ; get items table ptr
+
+FIRST_CARRIED01
+    LDX ,Y                  ; get item desc ptr
+    CMPX #NULL              ; end of table?
+    BEQ FIRST_CARRIED_DONE  ; return NULL
+
+    BITB ITEM_PROP_OFFSET, Y    ; check that prop(s) match
+    BEQ FIRST_CARRIED02         ; if not, continue to next item
+
+    LDA ITEM_LOC_OFFSET, Y  ; get room loc of item
+    CMPA #CARRYING          ; carrying it?
+    TFR Y, X                ; put ptr to item in X
+    BEQ FIRST_CARRIED_DONE  ; yes, return 
+
+FIRST_CARRIED02
+    LEAY ITEM_SIZE, Y       ; get next item ptr
+    BRA FIRST_CARRIED01     ; check next item
+
+FIRST_CARRIED_DONE
+    PULS A, B, Y, PC
+
+;------------------------------------
+; Check that we don't have more items
+; than the current limit and drop an
+; item as necessary
+;------------------------------------
+PACK_CHECK
+    PSHS A, B, X
+
+    ; drop items until at limit
+PACK_CHECK01
+    JSR COUNT_ITEMS     ; count items carried
+    CMPA ITEM_LIMIT     ; more than we can carry?
+    BLE PACK_CHECK_DONE ; no, done
+
+    LDB #DROPPABLE          ; find first droppable item
+    JSR FIRST_CARRIED_ITEM  ; get ptr to item in X
+    CMPX #NULL              ; is null?
+    BEQ PACK_CHECK_DONE     ; if so done
+
+    LDA ROOM                ; get current room
+    STA ITEM_LOC_OFFSET, X  ; drop item in room
+    BRA PACK_CHECK01
+
+PACK_CHECK_DONE
+    PULS A, B, X, PC
+
+;------------------------------------
 ; Include various function libraries
 ;------------------------------------
 INCLUDE "print.inc"
@@ -1043,7 +1100,7 @@ INCLUDE "math.inc"
     HELP_MSG FCZ "TRY VERBS LIKE: LOOK, NORTH, PACK, GET, DROP\r"
     PICKUP FCZ "YOU PICK UP THE ITEM.\r\r"
     CANT_TAKE_MSG FCZ "YOU CAN'T TAKE THAT!\r\r"
-    CANT_DROP_MSG FCZ "YOU CAN'T SEEM TO PART WITH IT!\r\r"
+    CANT_DROP_MSG FCZ "YOU TRY BUT YOU CAN'T SEEM TO PART WITH IT!\r\r"
     DROPWHAT FCZ "DROP WHAT?\r\r"
     DROPITEM FCZ "YOU DROP THE ITEM.\r\r"
 
@@ -1190,25 +1247,25 @@ INCLUDE "math.inc"
 ; Format: description, room, read, props
 ;---------------------------
 ITEMS
-    FDB RED_KEY     FCB 6   FDB NULL FCB TAKEABLE
-    FDB BLUE_KEY    FCB 13  FDB NULL FCB TAKEABLE
-    FDB GREEN_KEY   FCB 8   FDB NULL FCB TAKEABLE
-    FDB GOLD_KEY    FCB 14  FDB NULL FCB TAKEABLE
+    FDB RED_KEY     FCB 6   FDB NULL FCB NORMAL_ITEM
+    FDB BLUE_KEY    FCB 13  FDB NULL FCB NORMAL_ITEM
+    FDB GREEN_KEY   FCB 8   FDB NULL FCB NORMAL_ITEM
+    FDB GOLD_KEY    FCB 14  FDB NULL FCB NORMAL_ITEM
     ; FDB PLAT_KEY FCB 0
-    FDB SILVER_KEY  FCB 21  FDB NULL FCB TAKEABLE
-    FDB BROWN_BOOK  FCB 24  FDB BROWN_BOOK_READ FCB TAKEABLE
-    FDB SMALL_SACK  FCB 65  FDB NULL FCB TAKEABLE
-    FDB BACKPACK    FCB 88  FDB NULL FCB TAKEABLE
-    FDB MOP         FCB 0   FDB ACME_READ FCB 0
-    FDB BLEACH      FCB 0   FDB DO_NOT_DRINK_READ FCB TAKEABLE | DRINKABLE
-    FDB CHEESE      FCB 56  FDB USE_BY_READ FCB TAKEABLE | EATABLE
-    FDB WINE        FCB 63  FDB WINE_READ FCB TAKEABLE | DRINKABLE
-    FDB HAMMER      FCB 46  FDB ACME_READ FCB TAKEABLE
+    FDB SILVER_KEY  FCB 21  FDB NULL FCB NORMAL_ITEM
+    FDB RING        FCB 70  FDB RING_READ FCB TAKEABLE
+    FDB BROWN_BOOK  FCB 24  FDB BROWN_BOOK_READ FCB NORMAL_ITEM
+    FDB SMALL_SACK  FCB 65  FDB NULL FCB NORMAL_ITEM
+    FDB BACKPACK    FCB 88  FDB NULL FCB NORMAL_ITEM
+    FDB MOP         FCB 0   FDB ACME_READ FCB NORMAL_ITEM
+    FDB BLEACH      FCB 0   FDB DO_NOT_DRINK_READ FCB NORMAL_ITEM | DRINKABLE
+    FDB CHEESE      FCB 56  FDB USE_BY_READ FCB NORMAL_ITEM | EATABLE
+    FDB WINE        FCB 63  FDB WINE_READ FCB NORMAL_ITEM | DRINKABLE
+    FDB HAMMER      FCB 46  FDB ACME_READ FCB NORMAL_ITEM
     ; FDB FLASHLIGHT FCB 0
-    FDB BUCKET      FCB 33  FDB ACME_READ FCB TAKEABLE
-    FDB RING        FCB 70  FDB RING_READ FCB TAKEABLE | CURSED
-    FDB ROPE        FCB 0   FDB NULL FCB TAKEABLE
-    FDB SKULL       FCB 65  FDB SKULL_READ FCB TAKEABLE
+    FDB BUCKET      FCB 33  FDB ACME_READ FCB NORMAL_ITEM
+    FDB ROPE        FCB 0   FDB NULL FCB NORMAL_ITEM
+    FDB SKULL       FCB 65  FDB SKULL_READ FCB NORMAL_ITEM
     ; FDB LEAD_BAR FCB 0
     ; FDB STICK FCB 0
     ; FDB BROOM FCB 0
@@ -1808,11 +1865,13 @@ TRANSITIONS
 ; format: predicate, action
 ;---------------------------
 RULES
-    ; FDB NEVER, PASS                 ; do nothing test rule
-    FDB ALWAYS, SET_ITEMS_DEFAULT   ; set base inventory limit
-    FDB HAVE_SACK, SET_ITEMS_SACK   ; sack gives more items
-    FDB HAVE_PACK, SET_ITEMS_PACK   ; backpack gives even more
-    FDB NULL                        ; end of table
+    ; FDB NEVER, PASS                   ; do nothing test rule
+    FDB ALWAYS,     SET_ITEMS_DEFAULT   ; set base inventory limit
+    FDB HAVE_SACK,  SET_ITEMS_SACK      ; sack gives more items
+    FDB HAVE_PACK,  SET_ITEMS_PACK      ; backpack gives even more
+    FDB ALWAYS,     PACK_CHECK          ; ensure we respect carry limits
+
+    FDB NULL                            ; end of table
 
 ;---------------------------
 ; Vars and structures

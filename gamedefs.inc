@@ -81,4 +81,6 @@
     USABLE      EQU 8           ; can be used
     OPENABLE    EQU 16          ; can be open/closed
     LOCKABLE    EQU 32          ; can be locked/unlocked
-    CURSED      EQU 64          ; can't be dropped
+    DROPPABLE   EQU 64          ; can be dropped
+
+    NORMAL_ITEM EQU TAKEABLE | DROPPABLE
