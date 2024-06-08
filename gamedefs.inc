@@ -46,8 +46,8 @@
     ROOM_MOVE_OFFSET EQU 2      ; offset of move items
 
     ; cmd struct
+    CMD_ENTRY_SIZE EQU 4        ; size of cmd table entry 2 + 2 = 4
     CMD_FN_OFFSET EQU 2         ; cmd table fn offset
-    CMD_TABLE_ENTRY EQU 4       ; size of cmd table entry 2 + 2 = 4
     
     ; item struct
     ITEM_SIZE EQU 6             ; size of item table entry

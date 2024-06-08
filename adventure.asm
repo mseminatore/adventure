@@ -650,7 +650,7 @@ CMD_LOOP
     CMPX ,Y         ; see if we found a match
     BEQ EXECCMD     ; yes, do command
 
-    LEAY CMD_TABLE_ENTRY, Y       ; point to next command in table
+    LEAY CMD_ENTRY_SIZE, Y       ; point to next command in table
     TST ,Y          ; see if we are at end of cmds
     BNE CMD_LOOP    ; if not, continue
 
@@ -1273,6 +1273,14 @@ ITEMS
     ; FDB BROOM FCB 0
 
     FDB NULL    ; end of table
+
+;---------------------------
+; format: str ptr, token
+;---------------------------
+CMD_TABLE
+
+; format: token, action
+JMP_TABLE
 
 ;---------------------------
 ; Command jump table
