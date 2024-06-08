@@ -47,7 +47,7 @@ STRCHR_DONE
 ; Compare two strings
 ;
 ; Input: ptr to strings in X, Y
-; Return: Zero set on not-equal
+; Return: Zero set on equal
 ;--------------------------------
 STRCMP
     PSHS A, B

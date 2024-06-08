@@ -9,12 +9,36 @@
 
     SETDP $0        ; leave direct page at 0
     ORG $3F00       ; set our load origin
+    
+    FOO FCC "HELLO"
+    BAR FCC "THERE"
 
 START
     LDS #RAMEND     ; setup stack
 
     LDB #0
     TFR B, DP       ; make sure DP is set to 0
+
+LDX #FOO
+LDY #BAR
+JSR STRCMP
+BEQ A0
+
+LDA #'1'
+JSR PUTC
+
+A0
+
+LDY #FOO
+JSR STRCMP
+BEQ A1
+
+LDA #'A'
+JSR PUTC
+
+A1
+
+JSR WAIT
 
 RESTART
     JSR INIT        ; init game state
