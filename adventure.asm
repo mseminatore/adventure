@@ -10,43 +10,14 @@
     SETDP $0        ; leave direct page at 0
     ORG $3F00       ; set our load origin
     
-    FOO FCC "HELLO"
-    BAR FCC "THERE"
-
 START
     LDS #RAMEND     ; setup stack
 
     LDB #0
     TFR B, DP       ; make sure DP is set to 0
 
-LDX #FOO
-LDY #BAR
-JSR STRCMP
-BEQ A0
-
-LDA #'1'
-JSR PUTC
-
-A0
-
-LDY #FOO
-JSR STRCMP
-BEQ A1
-
-LDA #'A'
-JSR PUTC
-
-A1
-
-JSR WAIT
-
 RESTART
     JSR INIT        ; init game state
-
-    ; zero out move counter
-    ; LDX #MOVE_COUNT
-    ; STB ,X+
-    ; STB ,X
 
     JSR CLS         ; clear screen
     
@@ -98,11 +69,11 @@ GAME_LOOP01
 
     BRA GAME_LOOP   ; back to top of game loop
 
-;----------------------------
+;-----------------------------
 ; check for room decorations
 ; print all that are round for
 ; the curent room
-;----------------------------
+;-----------------------------
 CHECK_DECORATIONS
     PSHS A, B, X, Y
 
@@ -1146,12 +1117,13 @@ INCLUDE "math.inc"
     SKULL_READ FCZ "YORICK: A FELLOW OF INFINITE JEST.\r\r"
     WINE_READ FCZ "CHATEAU STE. MICHELLE CHARDONNAY 1980\r\r"
     RING_READ FCZ "ASH NAZG DURBATULUK, ASH NAZG GIMBATUL...\r\r"
-    MELVILE_READ FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
-    DANTE_READ FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
+    ; MELVILE_READ FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
+    ; DANTE_READ FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
 
     DEATH_MSG FCZ "SADLY YOU PERISH. TRY AGAIN?  hit any key\r\r"
 
-    ; MATCH FCZ "Match!\r\r"
+    ; NOMATCH FCZ "No match\r"
+    ; MATCH FCZ "Match!\r"
     ; ALWAYS_MSG FCZ "ALWAYS!\r"
     ; NEVER_MSG FCZ "NEVER!\r"
     ; PASS_MSG FCZ "PASS!\r"
@@ -1166,8 +1138,8 @@ INCLUDE "math.inc"
 
     RD0 FCZ "YOU ARE IN A SMALL DIMLY LIT ROOM. MAYBE A CLOSET? IT SMELLS LIKE BLEACH."
     RD1 FCZ "THERE IS AN OPEN DOOR TO THE WEST."
-    RD5 FCZ "THE SOUTH WALL IS BRICKED UP. THERE IS HOLE IN THE FLOOR JUST SOUTH OF HERE."
-    RD6 FCZ "YOU ARE IN A SMALL RESTROOM."
+    RD5 FCZ "THERE IS A HOLE IN THE FLOOR JUST SOUTH OF HERE."
+    RD6 FCZ "YOU ARE IN A DINGY RESTROOM."
     RD8 FCZ "YOU ARE IN A COMMON ROOM. THERE ARE CHAIRS AND A SMALL TABLE. CALL BELLS LINE THE EAST WALL. TO THE EAST IS A HALLWAY. TO THE WEST STAIRS LEAD UPWARD."
     RD13 FCZ "YOU ARE IN A SMALL PARLOR. THE SERVANTS LIKELY GATHERED HERE WHEN OFF-DUTY."
     RD14 FCZ "YOU ARE AT THE BOTTOM OF A PIT. THERE IS AN OPENING TO THE SOUTH."
