@@ -1274,13 +1274,31 @@ ITEMS
 
     FDB NULL    ; end of table
 
+LOOK_STR FCZ "LOOK"
+NO_STR FCZ "NORTH"
+SO_STR FCZ "SOUTH"
+EA_STR FCZ "EAST"
+WE_STR FCZ "WEST"
+
 ;---------------------------
 ; format: str ptr, token
 ;---------------------------
 CMD_TABLE
+    FDB LOOK_STR FCB 1
+    FDB NO_STR FCB 2
+    FDB SO_STR FCB 3
+    FDB EA_STR FCB 4
+    FDB WE_STR FCB 3
+    FDB NULL        ; end of table
 
 ; format: token, action
 JMP_TABLE
+    FDB PASS
+    FDB NORTH
+    FDB SOUTH
+    FDB EAST
+    FDB WEST
+    FDB NULL        ; end of table
 
 ;---------------------------
 ; Command jump table
