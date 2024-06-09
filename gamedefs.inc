@@ -40,6 +40,7 @@
     ; item ID values
     SACK_ID EQU $5341           ; 'SA'
     PACK_ID EQU $4241           ; 'PA'
+    ROPE_ID EQU $524F           ; 'RO'
 
     ; room struct
     ROOM_SIZE EQU 6             ; size of room entry 2 + 1 x 4 = 6
