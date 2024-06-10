@@ -4,11 +4,11 @@
 ; Input: ptr to string in X
 ; Return: length in A
 ;--------------------------------
-STRLEN
+STRLEN:
     PSHS B, X
     CLRA
 
-STRLEN01
+STRLEN01:
     LDB ,X+
     CMPB #0
     INCA
@@ -22,12 +22,12 @@ STRLEN01
 ; Input: ptr to string in X, char in A
 ; Return: ptr to c or NULL in X
 ;-------------------------------------
-STRCHR
+STRCHR:
     PSHS B
 
     CLRB
 
-STRCHR01
+STRCHR01:
     CMPA ,X           ; see if we match char
     BEQ STRCHR_DONE     ; if so return X
 
@@ -37,10 +37,10 @@ STRCHR01
     LEAX 1,X            ; point to next char
     BRA STRCHR01        ; do it again
 
-STRCHR02
+STRCHR02:
     LDX #NULL
 
-STRCHR_DONE
+STRCHR_DONE:
     PULS B, PC
 
 ;--------------------------------
@@ -49,12 +49,12 @@ STRCHR_DONE
 ; Input: ptr to strings in X, Y
 ; Return: Zero set on equal
 ;--------------------------------
-STREQ
+STREQ:
     PSHS A, B
 
     CLRB
 
-STREQ01
+STREQ01:
     LDA ,X              ; get char from str1
     CMPA ,Y             ; compare to char from str2
     BNE STREQ_DONE     ; different, so strings don't match
@@ -63,13 +63,13 @@ STREQ01
     CMPB ,X             ; see if str1 finished
     BEQ STREQ_DONE     ; if so strings match
 
-STREQ02
+STREQ02:
     LEAX 1, X           ; advance both string pointers
     LEAY 1, Y
 
     BRA STREQ01
 
-STREQ_DONE
+STREQ_DONE:
     PULS A, B, PC
 
 ;--------------------------------
@@ -78,16 +78,16 @@ STREQ_DONE
 ; Input: ptr to strs in X, Y
 ; Return: none
 ;--------------------------------
-STRCPY
+STRCPY:
     PSHS A, X, Y    ; save X and Y
 
-STRCPY01
+STRCPY01:
     LDA ,X+         ; load next char
     BEQ STRCPY_DONE ; if null terminator then done
     STA, Y+         ; otherwise copy the char
     BRA STRCPY01    ; keep going
 
-STRCPY_DONE
+STRCPY_DONE:
     PULS A, X, Y, PC
 
 ;--------------------------------
@@ -96,6 +96,6 @@ STRCPY_DONE
 ; Input: 
 ; Return:
 ;--------------------------------
-STRTOK
+STRTOK:
     RTS
     

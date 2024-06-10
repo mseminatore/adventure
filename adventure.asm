@@ -10,13 +10,13 @@
     SETDP $0        ; leave direct page at 0
     ORG $3F00       ; set our load origin
     
-START
+START:
     LDS #RAMEND     ; setup stack
 
     LDB #0
     TFR B, DP       ; make sure DP is set to 0
 
-RESTART
+RESTART:
     JSR INIT        ; init game state
 
     JSR CLS         ; clear screen
@@ -38,7 +38,7 @@ RESTART
     JSR CHECK_RULES         ; check for rules
     BRA GAME_LOOP01 ; skip the initial room description?
 
-GAME_LOOP
+GAME_LOOP:
     JSR CHECK_RULES         ; check for rules
 
     JSR LOOK_CMD            ; describe current room
@@ -49,7 +49,7 @@ GAME_LOOP
 
     JSR CHECK_DOORS         ; print any doors
 
-GAME_LOOP01
+GAME_LOOP01:
     LDA #CR         ; newlines
     JSR PUTC
 
@@ -74,14 +74,14 @@ GAME_LOOP01
 ; print all that are round for
 ; the curent room
 ;-----------------------------
-CHECK_DECORATIONS
+CHECK_DECORATIONS:
     PSHS A, B, X, Y
 
     LDY #DECORATIONS        ; get decorator table ptr
     LDB ROOM                ; get current room number
     LDA #SPACE
 
-CHECK_DECORATIONS01
+CHECK_DECORATIONS01:
     LDX ,Y                      ; get decorator descriptor
     CMPX #NULL                  ; end of table?
     BEQ CHECK_DECORATIONS_DONE  ; if yes quit
@@ -92,11 +92,11 @@ CHECK_DECORATIONS01
     JSR PUTC                        ; print space
     JSR PUTS                        ; print description
 
-CHECK_DECORATIONS02
+CHECK_DECORATIONS02:
     LEAY DECORATOR_SIZE, Y          ; get next table item
     BRA CHECK_DECORATIONS01
 
-CHECK_DECORATIONS_DONE
+CHECK_DECORATIONS_DONE:
     PULS A, B, X, Y, PC
 
 ;----------------------------
@@ -105,13 +105,13 @@ CHECK_DECORATIONS_DONE
 ; Input: none
 ; Return: none
 ;----------------------------
-CHECK_DOORS
+CHECK_DOORS:
     PSHS A, X, Y, U
 
     LDY #DOORS      ; get door table ptr
     LDA ROOM        ; get current room num
 
-CHECK_DOORS01
+CHECK_DOORS01:
     LDU ,Y                  ; get door obj ptr
     CMPU #NULL              ; is it NULL?
     BEQ CHECK_DOORS_DONE    ; if so done
@@ -137,11 +137,11 @@ CHECK_DOORS01
     LDA #'.'
     JSR PUTC
     
-CHECK_DOORS02
+CHECK_DOORS02:
     LEAY DOOR_SIZE, Y       ; get next door ptr
     BRA CHECK_DOORS01
 
-CHECK_DOORS_DONE
+CHECK_DOORS_DONE:
     PULS A, X, Y, U, PC
 
 ;----------------------------
@@ -150,12 +150,12 @@ CHECK_DOORS_DONE
 ; Input: none
 ; Return: none
 ;----------------------------
-CHECK_RULES
+CHECK_RULES:
     PSHS X, Y
 
     LDY #RULES              ; get rules table ptr
 
-CHECK_RULES01
+CHECK_RULES01:
     LDX ,Y                  ; get rule pred ptr
     CMPX #NULL              ; is it NULL?
     BEQ CHECK_RULES_DONE    ; if so done
@@ -165,11 +165,11 @@ CHECK_RULES01
 
     JSR [RULE_ACTIOM_OFFSET,Y]  ; then do the ACTION
 
-CHECK_RULES02
+CHECK_RULES02:
     LEAY RULE_SIZE,Y        ; get next rule ptr
     BRA CHECK_RULES01
 
-CHECK_RULES_DONE
+CHECK_RULES_DONE:
     PULS X, Y, PC
 
 ;----------------------------
@@ -178,11 +178,11 @@ CHECK_RULES_DONE
 ; Input: none
 ; Return: none
 ;----------------------------
-CHECK_ITEMS
+CHECK_ITEMS:
     PSHS A, X, Y, U
     LDY #ITEMS          ; get items table ptr
 
-CHECK_ITEMS01
+CHECK_ITEMS01:
     LDX ,Y                  ; get item description ptr
     CMPX #NULL              ; done?
     BEQ CHECK_ITEMS_DONE    ; if so quit
@@ -199,11 +199,11 @@ CHECK_ITEMS01
     LDX #ITEM_MSG2      ; get item postamble
     JSR PUTS            ; print it
 
-CHECK_ITEMS02
+CHECK_ITEMS02:
     LEAY ITEM_SIZE, Y   ; point to next item
     BRA CHECK_ITEMS01   ; do next item
 
-CHECK_ITEMS_DONE
+CHECK_ITEMS_DONE:
     PULS A, X, Y, U, PC
 
 ;----------------------------
@@ -212,7 +212,7 @@ CHECK_ITEMS_DONE
 ; Input: none
 ; Return: none
 ;----------------------------
-INVENTORY_CMD
+INVENTORY_CMD:
     PSHS A, B, X, Y
 
     LDY #ITEMS          ; get items table ptr
@@ -220,7 +220,7 @@ INVENTORY_CMD
     JSR PUTS
     CLRB                ; zero item counter
 
-INV01
+INV01:
     LDX ,Y              ; get item description ptr
     CMPX #NULL          ; done?
     BEQ INV04           ; if yes...
@@ -237,7 +237,7 @@ INV01
     JSR PUTS                ; print it
     PULS X                  ; restore item description ptr
 
-INV02
+INV02:
     LDA #'A'
     JSR PUTC
     LDA #SPACE
@@ -245,11 +245,11 @@ INV02
     JSR PUTS                ; print item description
     INCB                    ; inc item count
 
-INV03
+INV03:
     LEAY ITEM_SIZE, Y       ; point to next item
     BRA INV01
 
-INV04
+INV04:
     CMPB #0                 ; pack empty?
     BNE INV05               ; if not...
 
@@ -257,11 +257,11 @@ INV04
     JSR PUTS
     BRA INVENTORY_DONE
 
-INV05
+INV05:
     LDX #END_MSG
     JSR PUTS
 
-INVENTORY_DONE
+INVENTORY_DONE:
     PULS A, B, X, Y, PC
 
 ;----------------------------
@@ -270,7 +270,7 @@ INVENTORY_DONE
 ; Input: none
 ; Return: none
 ;----------------------------
-INC_MOVES
+INC_MOVES:
     PSHS D
     
     LDD #1
@@ -285,19 +285,19 @@ INC_MOVES
 ; Input: ptr to string in X
 ; Return: ptr to first non-space in X
 ;----------------------------
-SKIP_SPACES
+SKIP_SPACES:
     PSHS A
 
     LDA #SPACE
 
-SKIP_SPACES01
+SKIP_SPACES01:
     CMPA ,X
     BNE SKIP_SPACES_DONE
 
     LEAX 1, X
     BRA SKIP_SPACES01
 
-SKIP_SPACES_DONE
+SKIP_SPACES_DONE:
     PULS A, PC
 
 ;----------------------------
@@ -306,12 +306,12 @@ SKIP_SPACES_DONE
 ; Input: none
 ; Return: item count in A
 ;----------------------------
-COUNT_ITEMS
+COUNT_ITEMS:
     PSHS B, X, Y            ; save B, X and Y
     LDY #ITEMS              ; get items table ptr
     CLRA                    ; zero item count
 
-COUNT_ITEMS01
+COUNT_ITEMS01:
     LDX ,Y                  ; get item description ptr
     CMPX #NULL              ; is it null?
     BEQ COUNT_ITEMS_DONE    ; if so we are done
@@ -322,11 +322,11 @@ COUNT_ITEMS01
 
     INCA                    ; otherwise inc counter
 
-COUNT_ITEMS02
+COUNT_ITEMS02:
     LEAY ITEM_SIZE, Y       ; get next item
     BRA COUNT_ITEMS01       ; keep going
 
-COUNT_ITEMS_DONE
+COUNT_ITEMS_DONE:
     PULS B, X, Y, PC
 
 ;---------------------------------
@@ -335,12 +335,12 @@ COUNT_ITEMS_DONE
 ; Input: item first two char in X
 ; Return: item ptr in Y or NULL
 ;---------------------------------
-GET_ITEM_PTR
+GET_ITEM_PTR:
     PSHS D, X
 
     LDY #ITEMS      ; get items table ptr
 
-GET_ITEM01
+GET_ITEM01:
     LDD ,Y          ; get item description ptr
     CMPD #NULL      ; end of table?
     BEQ GET_ITEM_FAILED
@@ -351,16 +351,16 @@ GET_ITEM01
     LEAY ITEM_SIZE, Y   ; get next item ptr
     BRA GET_ITEM01      ; check next item
 
-GET_ITEM_FAILED
+GET_ITEM_FAILED:
     LDY #NULL       ; return nullptr
 
-GET_ITEM_DONE
+GET_ITEM_DONE:
     PULS D, X, PC
 
 ;----------------------------
 ; Get an object
 ;----------------------------
-GET_CMD
+GET_CMD:
     PSHS A, X, Y       ; save D and X
 
     JSR COUNT_ITEMS ; how many items do we have?
@@ -396,32 +396,32 @@ GET_CMD
     JSR PUTS
     BRA GET_DONE            ; finished!
 
-GET01
+GET01:
     LDX #GETWHAT            ; print can't find item
     JSR PUTS
     BRA GET_DONE
 
-GET02
+GET02:
     LDX #PACK_FULL
     JSR PUTS
     BRA GET_DONE
 
-GET03
+GET03:
     LDX #THEREISNO
     JSR PUTS
     BRA GET_DONE
 
-GET04
+GET04:
     LDX #CANT_TAKE_MSG
     JSR PUTS
 
-GET_DONE
+GET_DONE:
     PULS A, X, Y, PC
 
 ;----------------------------
 ; Drop an object
 ;----------------------------
-DROP_CMD
+DROP_CMD:
     PSHS A, X, Y       ; save D and X
 
     LDX #INBUF      ; get input buffer
@@ -453,27 +453,27 @@ DROP_CMD
     JSR PUTS
     BRA DROP_DONE
 
-DROP01
+DROP01:
     LDX #DROPWHAT
     JSR PUTS
     BRA DROP_DONE
 
-DROP02
+DROP02:
     LDX #DONT_HAVE_MSG
     JSR PUTS
     BRA DROP_DONE
 
-DROP03
+DROP03:
     LDX #CANT_DROP_MSG
     JSR PUTS
 
-DROP_DONE
+DROP_DONE:
     PULS A, X, Y, PC
 
 ;----------------------------
 ; Try to read an item
 ;----------------------------
-READ_CMD
+READ_CMD:
     PSHS A, X, Y
 
     LDX #INBUF      ; get input buffer
@@ -503,20 +503,20 @@ READ_CMD
 
     LDX #DEFAULT_READ_MSG
 
-READ01
+READ01:
     JSR PUTS
     BRA READ_DONE
 
-READ02
+READ02:
     LDX #DONT_HAVE_MSG
     JSR PUTS
     BRA READ_DONE
 
-READ03
+READ03:
     LDX #READ_WHAT_MSG
     JSR PUTS
 
-READ_DONE
+READ_DONE:
     PULS A, X, Y, PC
 
 ;----------------------------
@@ -525,13 +525,13 @@ READ_DONE
 ; Input: none
 ; Return: none
 ;----------------------------
-PASS
+PASS:
     RTS
 
 ;----------------------------
 ; always true predicate
 ;----------------------------
-ALWAYS
+ALWAYS:
     ; ORCC #FLAG_Z    ; Z = 1 = true
     SETZ
     RTS
@@ -539,7 +539,7 @@ ALWAYS
 ;----------------------------
 ; never true predicate
 ;----------------------------
-NEVER
+NEVER:
     ; ANDCC #~FLAG_Z  ; z = 0 = false
     CLRZ
     RTS
@@ -550,12 +550,12 @@ NEVER
 ; Input: item in X
 ; Return: z = 1 = true if carrying
 ;----------------------------
-HAVE_ITEM
+HAVE_ITEM:
     PSHS A, Y
     LDY #ITEMS      ; get item table ptr
     PSHS X          ; save copy of X
 
-HAVE_ITEM01
+HAVE_ITEM01:
     LDX ,Y              ; get item description ptr
     CMPX #NULL          ; is it null?
     BEQ HAVE_ITEM_FALSE ; if so we are done
@@ -568,27 +568,27 @@ HAVE_ITEM01
     CMPA #CARRYING           ; are we carrying it?
     BEQ HAVE_ITEM_TRUE      ; if so return true
 
-HAVE_ITEM02
+HAVE_ITEM02:
     LEAY ITEM_SIZE, Y   ; get next item
     BRA HAVE_ITEM01     ; continue
 
-HAVE_ITEM_TRUE
+HAVE_ITEM_TRUE:
     ; ORCC #FLAG_Z    ; z = 1 = true
     SETZ
     BRA HAVE_ITEM_DONE
 
-HAVE_ITEM_FALSE
+HAVE_ITEM_FALSE:
     ; ANDCC #~FLAG_Z  ; z = 0 = false
     CLRZ
 
-HAVE_ITEM_DONE
+HAVE_ITEM_DONE:
     PULS X          ; restore copy of X
     PULS A, Y, PC
 
 ;----------------------------
 ; true if has small sack
 ;----------------------------
-HAVE_SACK
+HAVE_SACK:
     PSHS X
 
     LDX #SACK_ID        ; sack ID
@@ -599,7 +599,7 @@ HAVE_SACK
 ;----------------------------
 ; true if has backpack
 ;----------------------------
-HAVE_PACK
+HAVE_PACK:
     PSHS X
 
     LDX #PACK_ID        ; pack ID
@@ -610,7 +610,7 @@ HAVE_PACK
 ;----------------------------
 ; set default item limit
 ;----------------------------
-SET_ITEMS_DEFAULT
+SET_ITEMS_DEFAULT:
     PSHS A
     LDA #DEFAULT_ITEM_LIMIT
     STA ITEM_LIMIT
@@ -619,7 +619,7 @@ SET_ITEMS_DEFAULT
 ;----------------------------
 ; set sack item limit
 ;----------------------------
-SET_ITEMS_SACK
+SET_ITEMS_SACK:
     PSHS A
     LDA #SACK_ITEM_LIMIT
     STA ITEM_LIMIT
@@ -628,7 +628,7 @@ SET_ITEMS_SACK
 ;----------------------------
 ; set pack item limit
 ;----------------------------
-SET_ITEMS_PACK
+SET_ITEMS_PACK:
     PSHS A
     LDA #PACK_ITEM_LIMIT
     STA ITEM_LIMIT
@@ -640,13 +640,13 @@ SET_ITEMS_PACK
 ; Input: ptr to cmd buf in X
 ; Return: none
 ;----------------------------
-DO_CMD
+DO_CMD:
     PSHS X, Y
 
     LDX ,X         ; get cmd chars
     LDY #CMDS       ; Y points to cmd table
 
-CMD_LOOP
+CMD_LOOP:
     CMPX ,Y         ; see if we found a match
     BEQ EXECCMD     ; yes, do command
 
@@ -659,10 +659,10 @@ CMD_LOOP
 
     BRA CMD_DONE    ; done with commands
 
-EXECCMD
+EXECCMD:
     JSR [CMD_FN_OFFSET, Y]      ; point to cmd function and call it!
 
-CMD_DONE
+CMD_DONE:
     PULS X, Y, PC
 
 ;-------------------------
@@ -671,7 +671,7 @@ CMD_DONE
 ; Input: none
 ; Return: room ptr in X
 ;-------------------------
-GET_ROOM_PTR
+GET_ROOM_PTR:
     PSHS A, B, Y
 
     LDA ROOM        ; get current room number
@@ -687,13 +687,13 @@ GET_ROOM_PTR
 ; Input: new room in A
 ; Return: none
 ;---------------------------------
-CHECK_TRANSITION
+CHECK_TRANSITION:
     PSHS A, X, Y
 
     LDY #TRANSITIONS        ; get ptr to transitions table
     LDB ROOM                ; get current room
 
-CHECK_TRANSITION01
+CHECK_TRANSITION01:
     LDX ,Y                      ; get action ptr
     CMPX #NULL                  ; is it nullptr?
     BEQ CHECK_TRANSITION_DONE   ; if so we are done
@@ -701,19 +701,19 @@ CHECK_TRANSITION01
     CMPB TRANSITION_FROM, Y     ; see if we find a FROM that matches
     BEQ CHECK_TRANSITION03      ; if so check the TO
 
-CHECK_TRANSITION02
+CHECK_TRANSITION02:
 
     LEAY TRANSITION_SIZE, Y     ; get next table entry
     BRA CHECK_TRANSITION01      ; do it again
 
     ; then look for to that matches
-CHECK_TRANSITION03
+CHECK_TRANSITION03:
     CMPA TRANSITION_TO, Y       ; does TO match?
     BNE CHECK_TRANSITION02      ; if not go to next item
 
     JSR [,Y]                    ; execution action
 
-CHECK_TRANSITION_DONE
+CHECK_TRANSITION_DONE:
     PULS A, X, Y, PC
 
 ;---------------------------------------------
@@ -722,7 +722,7 @@ CHECK_TRANSITION_DONE
 ; Input: move dir in B, move message ptr in X
 ; Return: none
 ;----------------------------------------------
-MOVE
+MOVE:
     PSHS A, X, Y
 
     PSHS X                  ; save X
@@ -742,7 +742,7 @@ MOVE
     SETC                ; set carry
     PULS A, X, Y, PC
 
-MOVE_ERR
+MOVE_ERR:
     LDX #NOMOVE         ; print move err msg
     JSR PUTS
 
@@ -752,7 +752,7 @@ MOVE_ERR
 ;-------------------------
 ; try move to north
 ;-------------------------
-NORTH
+NORTH:
     PSHS B, X
     LDB #0
     LDX #NORTH_MOVE
@@ -762,7 +762,7 @@ NORTH
 ;-------------------------
 ; try move to south
 ;-------------------------
-SOUTH
+SOUTH:
     PSHS B, X
     LDB #1
     LDX #SOUTH_MOVE
@@ -772,7 +772,7 @@ SOUTH
 ;-------------------------
 ; try move to east
 ;-------------------------
-EAST
+EAST:
     PSHS B, X
     LDB #2
     LDX #EAST_MOVE
@@ -782,7 +782,7 @@ EAST
 ;-------------------------
 ; try move to west
 ;-------------------------
-WEST
+WEST:
     PSHS B, X
     LDB #3
     LDX #WEST_MOVE
@@ -795,7 +795,7 @@ WEST
 ; Input: none
 ; Return: none
 ;-------------------------
-LOOK_CMD
+LOOK_CMD:
     PSHS X
     JSR GET_ROOM_PTR    ; get current room ptr
     LDX ,X              ; get room description
@@ -805,7 +805,7 @@ LOOK_CMD
 ;-------------------------
 ; go back to start room
 ;-------------------------
-DBG_HOME
+DBG_HOME:
     PSHS A
     CLRA            ; room 0
     STA ROOM        ; set room
@@ -814,7 +814,7 @@ DBG_HOME
 ;-------------------------
 ; print current room ptr
 ;-------------------------
-DBG_RP
+DBG_RP:
     PSHS A, X
     LDA #'$'
     JSR PUTC
@@ -828,7 +828,7 @@ DBG_RP
 ;-------------------------
 ; display move count
 ;-------------------------
-MOVES
+MOVES:
     PSHS A, X
 
     LDX #MOVE_MSG
@@ -844,7 +844,7 @@ MOVES
 ;-------------------------
 ; print cur room num
 ;-------------------------
-DBG_ROOM
+DBG_ROOM:
     PSHS A, X
 
     LDX #ROOM_MSG
@@ -860,7 +860,7 @@ DBG_ROOM
 ;-------------------------
 ; display health
 ;-------------------------
-HEALTH_CMD
+HEALTH_CMD:
     PSHS A, X
     LDX #HEALTH_START
     JSR PUTS
@@ -875,7 +875,7 @@ HEALTH_CMD
 ;------------------------------------
 ; display score
 ;------------------------------------
-SCORE_CMD
+SCORE_CMD:
     PSHS A, X
     LDX #SCORE_START
     JSR PUTS
@@ -900,7 +900,7 @@ SCORE_CMD
 ;------------------------------------
 ; show item count/capacity
 ;------------------------------------
-DBG_ITEMS
+DBG_ITEMS:
     PSHS A, X
 
     LDX #PACK_MSG
@@ -920,13 +920,13 @@ DBG_ITEMS
 ;---------------------------------
 ; goto a room
 ;---------------------------------
-DBG_GOTO
+DBG_GOTO:
     RTS
 
 ;---------------------------------
 ; Enter dumbwaiter action
 ;---------------------------------
-DW_ENTER_ACTION
+DW_ENTER_ACTION:
     PSHS X
     LDX #DW1_MSG
     JSR PUTS
@@ -935,7 +935,7 @@ DW_ENTER_ACTION
 ;---------------------------------
 ; Exit dumbwaiter action
 ;---------------------------------
-DW_EXIT_ACTION
+DW_EXIT_ACTION:
     PSHS X
     LDX #DW2_MSG
     JSR PUTS
@@ -944,7 +944,7 @@ DW_EXIT_ACTION
 ;---------------------------------
 ; Elevator enter action
 ;---------------------------------
-EL_ENTER_ACTION
+EL_ENTER_ACTION:
     PSHS X
     LDX #EL1_MSG
     JSR PUTS
@@ -953,7 +953,7 @@ EL_ENTER_ACTION
 ;---------------------------------
 ; Elevator exit action
 ;---------------------------------
-EL_EXIT_ACTION
+EL_EXIT_ACTION:
     PSHS X
     LDX #EL2_MSG
     JSR PUTS
@@ -962,7 +962,7 @@ EL_EXIT_ACTION
 ;---------------------------------
 ;
 ;---------------------------------
-BALCONY_ACTION
+BALCONY_ACTION:
     PSHS X
 
     LDX #ROPE_ID        ; rope ID
@@ -973,17 +973,17 @@ BALCONY_ACTION
     JSR PUTS
     BRA BALCONY_DONE
 
-BALCONY01
+BALCONY01:
     LDX #DIE_MSG
     JSR PUTS
 
-BALCONY_DONE
+BALCONY_DONE:
     PULS X, PC
 
 ;---------------------------------
 ; Fall in hole action
 ;---------------------------------
-FALL_ACTION
+FALL_ACTION:
     PSHS A, X
     LDX #FALL_MSG
     JSR PUTS
@@ -995,7 +995,7 @@ FALL_ACTION
 ;---------------------------
 ; Initialize game state
 ;---------------------------
-INIT
+INIT:
     PSHS D
 
     LDA #ROOM_START
@@ -1019,11 +1019,11 @@ INIT
 ; Input: match mask in B
 ; Return: ptr to item in X or NULL
 ;------------------------------------
-FIRST_CARRIED_ITEM
+FIRST_CARRIED_ITEM:
     PSHS A, B, Y
     LDY #ITEMS          ; get items table ptr
 
-FIRST_CARRIED01
+FIRST_CARRIED01:
     LDX ,Y                  ; get item desc ptr
     CMPX #NULL              ; end of table?
     BEQ FIRST_CARRIED_DONE  ; return NULL
@@ -1036,11 +1036,11 @@ FIRST_CARRIED01
     TFR Y, X                ; put ptr to item in X
     BEQ FIRST_CARRIED_DONE  ; yes, return 
 
-FIRST_CARRIED02
+FIRST_CARRIED02:
     LEAY ITEM_SIZE, Y       ; get next item ptr
     BRA FIRST_CARRIED01     ; check next item
 
-FIRST_CARRIED_DONE
+FIRST_CARRIED_DONE:
     PULS A, B, Y, PC
 
 ;------------------------------------
@@ -1048,11 +1048,10 @@ FIRST_CARRIED_DONE
 ; than the current limit and drop an
 ; item as necessary
 ;------------------------------------
-PACK_CHECK
+PACK_CHECK:
     PSHS A, B, X
 
-    ; drop items until at limit
-PACK_CHECK01
+PACK_CHECK01:
     JSR COUNT_ITEMS     ; count items carried
     CMPA ITEM_LIMIT     ; more than we can carry?
     BLE PACK_CHECK_DONE ; no, done
@@ -1066,7 +1065,7 @@ PACK_CHECK01
     STA ITEM_LOC_OFFSET, X  ; drop item in room
     BRA PACK_CHECK01
 
-PACK_CHECK_DONE
+PACK_CHECK_DONE:
     PULS A, B, X, PC
 
 ;------------------------------------
@@ -1080,91 +1079,91 @@ INCLUDE "math.inc"
 ;[]--------------[]
 ; Data segment
 ;[]--------------[]
-    PROMPT FCZ ">"
+    PROMPT: FCZ ">"
 
     ; CURSOR FCC "!/-\"
 
-    UNKCMD FCZ "I DON'T UNDERSTAND! TRY AGAIN?\r\r"
+    UNKCMD: FCZ "I DON'T UNDERSTAND! TRY AGAIN?\r\r"
 
-    WELCOME_MSG1 FCZ "\r\r\r\r  WELCOME TO mystery mansion!\r\r     INTERACTIVE FICTION BY\r  MARK AND MATTHEW SEMINATORE\r\r      COPYRIGHT (C) 2024\r      ALL RIGHTS RESERVED."
+    WELCOME_MSG1: FCZ "\r\r\r\r  WELCOME TO mystery mansion!\r\r     INTERACTIVE FICTION BY\r  MARK AND MATTHEW SEMINATORE\r\r      COPYRIGHT (C) 2024\r      ALL RIGHTS RESERVED."
 
-    NOMOVE FCZ "YOU CAN'T GO THAT WAY!\r\r"
+    NOMOVE: FCZ "YOU CAN'T GO THAT WAY!\r\r"
 
-    DIED FCZ "YOU HAVE died! TRY AGAIN.\r\r"
-    WIN_MSG FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
-    DIE_MSG FCZ "YOU FALL TO YOUR DEATH AND MAKE QUITE A MESS!\r\r"
+    DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
+    WIN_MSG: FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
+    DIE_MSG: FCZ "YOU FALL TO YOUR DEATH AND MAKE QUITE A MESS!\r\r"
 
-    NORTH_MOVE FCZ "YOU MOVE TO THE NORTH.\r\r"
-    SOUTH_MOVE FCZ "YOU MOVE TO THE SOUTH.\r\r"
-    EAST_MOVE FCZ "YOU MOVE TO THE EAST.\r\r"
-    WEST_MOVE FCZ "YOU MOVE TO THE WEST.\r\r"
+    NORTH_MOVE: FCZ "YOU MOVE TO THE NORTH.\r\r"
+    SOUTH_MOVE: FCZ "YOU MOVE TO THE SOUTH.\r\r"
+    EAST_MOVE: FCZ "YOU MOVE TO THE EAST.\r\r"
+    WEST_MOVE: FCZ "YOU MOVE TO THE WEST.\r\r"
 
-    ROOM_MSG FCZ "ROOM "
-    MOVE_MSG FCZ "MOVES "
+    ROOM_MSG: FCZ "ROOM "
+    MOVE_MSG: FCZ "MOVES "
 
-    START_MSG FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. FIND YOUR WAY OUT.\r\rtype LOOK to examine room\r"
+    START_MSG: FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. FIND YOUR WAY OUT.\r\rtype LOOK to examine room\r"
 
-    NOITEMS FCZ "NOTHING!\r\r"
+    NOITEMS: FCZ "NOTHING!\r\r"
 
-    FALL_MSG FCZ "YOU FALL INTO THE HOLE! IT IS A LONG WAY DOWN.\r\r"
-    DW1_MSG FCZ "AS YOU ENTER THE DUMBWAITER IT STARTS TO MOVE UPWARDS RAPIDLY! EVENTUALLY IT STOPS. YOU MUST BE SEVERAL FLOORS UP.\r\r"
-    DW2_MSG FCZ "AS YOU EXIT THE DUMBWAITER THE SUPPORT ROPE BREAKS AND IT FALLS OUT OF SIGHT. YOU HEAR IT CRASH SOMEWHERE FAR BELOW.\r\r"
+    FALL_MSG: FCZ "YOU FALL INTO THE HOLE! IT IS A LONG WAY DOWN.\r\r"
+    DW1_MSG: FCZ "AS YOU ENTER THE DUMBWAITER IT STARTS TO MOVE UPWARDS RAPIDLY! EVENTUALLY IT STOPS. YOU MUST BE SEVERAL FLOORS UP.\r\r"
+    DW2_MSG: FCZ "AS YOU EXIT THE DUMBWAITER THE SUPPORT ROPE BREAKS AND IT FALLS OUT OF SIGHT. YOU HEAR IT CRASH SOMEWHERE FAR BELOW.\r\r"
 
-    EL1_MSG FCZ "AS YOU ENTER THE ELEVATOR THE DOOR CLOSES BEHIND YOU. YOU DESCEND WHAT FEELS LIKE SEVERAL FLOORS.\r\r"
-    EL2_MSG FCZ "AS YOU EXIT THE ELEVATOR THE DOOR CLOSES WITH A LOUD CLICK BEHIND YOU. YOU CAN NO LONGER SEE THE OPENING.\r\r"
+    EL1_MSG: FCZ "AS YOU ENTER THE ELEVATOR THE DOOR CLOSES BEHIND YOU. YOU DESCEND WHAT FEELS LIKE SEVERAL FLOORS.\r\r"
+    EL2_MSG: FCZ "AS YOU EXIT THE ELEVATOR THE DOOR CLOSES WITH A LOUD CLICK BEHIND YOU. YOU CAN NO LONGER SEE THE OPENING.\r\r"
 
-    PACK_MSG FCZ "YOU ARE CARRYING: "
-    END_MSG FCZ ".\r\r"
-    PACK_GLUE_MSG FCZ ", "
-    PACK_FULL FCZ "YOU CAN'T CARRY ANY MORE!\r\r"
+    PACK_MSG: FCZ "YOU ARE CARRYING: "
+    END_MSG: FCZ ".\r\r"
+    PACK_GLUE_MSG: FCZ ", "
+    PACK_FULL: FCZ "YOU CAN'T CARRY ANY MORE!\r\r"
 
-    DONT_HAVE_MSG FCZ "YOU ARE'NT CARRYING IT!\r\r"
+    DONT_HAVE_MSG: FCZ "YOU ARE'NT CARRYING IT!\r\r"
 
-    READ_WHAT_MSG FCZ "READ WHAT?\r\r"
-    DEFAULT_READ_MSG FCZ "NOTHING OF NOTE.\r\r"
-    IT_SAYS FCZ "IT SAYS..."
+    READ_WHAT_MSG: FCZ "READ WHAT?\r\r"
+    DEFAULT_READ_MSG: FCZ "NOTHING OF NOTE.\r\r"
+    IT_SAYS: FCZ "IT SAYS..."
 
-    ONTHE_MSG FCZ " ON THE "
-    NORTH_MSG FCZ "NORTH WALL"
-    SOUTH_MSG FCZ "SOUTH WALL"
-    EAST_MSG FCZ "EAST WALL"
-    WEST_MSG FCZ "WEST WALL"
+    ONTHE_MSG: FCZ " ON THE "
+    NORTH_MSG: FCZ "NORTH WALL"
+    SOUTH_MSG: FCZ "SOUTH WALL"
+    EAST_MSG: FCZ "EAST WALL"
+    WEST_MSG: FCZ "WEST WALL"
 
-    WALL_MSG FDB NORTH_MSG, SOUTH_MSG, EAST_MSG, WEST_MSG
+    WALL_MSG: FDB NORTH_MSG, SOUTH_MSG, EAST_MSG, WEST_MSG
 
-    ITEM_MSG1 FCZ " THERE IS A "
-    ITEM_MSG2 FCZ " HERE."
-    THEREISNO FCZ "THERE IS NO SUCH ITEM HERE.\r\r"
-    GETWHAT FCZ "GET WHAT?\r\r"
-    HELP_MSG FCZ "TRY VERBS LIKE: LOOK, NORTH, PACK, GET, DROP\r"
-    PICKUP FCZ "YOU PICK UP THE ITEM.\r\r"
-    CANT_TAKE_MSG FCZ "YOU CAN'T TAKE THAT!\r\r"
-    CANT_DROP_MSG FCZ "YOU TRY BUT YOU CAN'T SEEM TO PART WITH IT!\r\r"
+    ITEM_MSG1: FCZ " THERE IS A "
+    ITEM_MSG2: FCZ " HERE."
+    THEREISNO: FCZ "THERE IS NO SUCH ITEM HERE.\r\r"
+    GETWHAT: FCZ "GET WHAT?\r\r"
+    HELP_MSG: FCZ "TRY VERBS LIKE: LOOK, NORTH, PACK, GET, DROP\r"
+    PICKUP: FCZ "YOU PICK UP THE ITEM.\r\r"
+    CANT_TAKE_MSG: FCZ "YOU CAN'T TAKE THAT!\r\r"
+    CANT_DROP_MSG: FCZ "YOU TRY BUT YOU CAN'T SEEM TO PART WITH IT!\r\r"
 
-    CANT_EAT_MSG FCZ "YOU CAN'T EAT THAT!\r\r"
-    CANT_DRINK_MSG FCZ "YOU CAN'T DRINK THAT!\r\r"
-    DRINK_MSG FCZ "YOU DRINK THE "
-    EAT_MSG FCZ "YOU EAT THE "
+    CANT_EAT_MSG: FCZ "YOU CAN'T EAT THAT!\r\r"
+    CANT_DRINK_MSG: FCZ "YOU CAN'T DRINK THAT!\r\r"
+    DRINK_MSG: FCZ "YOU DRINK THE "
+    EAT_MSG: FCZ "YOU EAT THE "
 
-    DROPWHAT FCZ "DROP WHAT?\r\r"
-    DROPITEM FCZ "YOU DROP THE ITEM.\r\r"
+    DROPWHAT: FCZ "DROP WHAT?\r\r"
+    DROPITEM: FCZ "YOU DROP THE ITEM.\r\r"
 
-    HEALTH_START FCZ "YOU HAVE "
-    HEALTH_TAIL FCZ " HP LEFT.\r\r"
+    HEALTH_START: FCZ "YOU HAVE "
+    HEALTH_TAIL: FCZ " HP LEFT.\r\r"
 
-    SCORE_START FCZ "YOUR SCORE IS "
+    SCORE_START: FCZ "YOUR SCORE IS "
 
-    BROWN_BOOK_READ FCZ "\"MY NAME IS OZYMANDIAS, KING OF KINGS; LOOK ON MY WORKS, YE MIGHTY, AND DESPAIR!\"\r\r"
-    ACME_READ FCZ "MFGD. BY ACME, INC.\r\r"
-    USE_BY_READ FCZ "BEST BY SEPT. 1980\r\r"
-    DO_NOT_DRINK_READ FCZ "toxic, DO NOT DRINK!\r\r"
-    SKULL_READ FCZ "YORICK: A FELLOW OF INFINITE JEST.\r\r"
-    WINE_READ FCZ "CHATEAU STE. MICHELLE CHARDONNAY 1980\r\r"
-    RING_READ FCZ "ASH NAZG DURBATULUK, ASH NAZG GIMBATUL...\r\r"
-    ; MELVILE_READ FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
-    ; DANTE_READ FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
+    BROWN_BOOK_READ: FCZ "\"MY NAME IS OZYMANDIAS, KING OF KINGS; LOOK ON MY WORKS, YE MIGHTY, AND DESPAIR!\"\r\r"
+    ACME_READ: FCZ "MFGD. BY ACME, INC.\r\r"
+    USE_BY_READ: FCZ "BEST BY SEPT. 1980\r\r"
+    DO_NOT_DRINK_READ: FCZ "toxic, DO NOT DRINK!\r\r"
+    SKULL_READ: FCZ "YORICK: A FELLOW OF INFINITE JEST.\r\r"
+    WINE_READ: FCZ "CHATEAU STE. MICHELLE CHARDONNAY 1980\r\r"
+    RING_READ: FCZ "ASH NAZG DURBATULUK, ASH NAZG GIMBATUL...\r\r"
+    ; MELVILE_READ: FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
+    ; DANTE_READ: FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
 
-    DEATH_MSG FCZ "SADLY YOU PERISH. TRY AGAIN?  hit any key\r\r"
+    DEATH_MSG: FCZ "SADLY YOU PERISH. TRY AGAIN?  hit any key\r\r"
 
     ; NOMATCH FCZ "No match\r"
     ; MATCH FCZ "Match!\r"
@@ -1175,127 +1174,127 @@ INCLUDE "math.inc"
     ;---------------------------
     ; Room descriptions
     ;---------------------------
-    HALL FCZ "YOU ARE IN A HALLWAY."
-    STAIRS FCZ "YOU ARE ON A STAIRWAY."
-    CELLAR FCZ "YOU ARE IN A CELLAR."
-    LANDING FCZ "YOU ARE ON A LANDING."
+    HALL: FCZ "YOU ARE IN A HALLWAY."
+    STAIRS: FCZ "YOU ARE ON A STAIRWAY."
+    CELLAR: FCZ "YOU ARE IN A CELLAR."
+    LANDING: FCZ "YOU ARE ON A LANDING."
 
-    RD0 FCZ "YOU ARE IN A SMALL DIMLY LIT ROOM. MAYBE A CLOSET? IT SMELLS LIKE BLEACH."
-    RD1 FCZ "THERE IS AN OPEN DOOR TO THE WEST."
-    RD5 FCZ "THERE IS A HOLE IN THE FLOOR JUST SOUTH OF HERE."
-    RD6 FCZ "YOU ARE IN A DINGY RESTROOM."
-    RD8 FCZ "YOU ARE IN A COMMON ROOM. THERE ARE CHAIRS AND A SMALL TABLE. CALL BELLS LINE THE EAST WALL. TO THE EAST IS A HALLWAY. TO THE WEST STAIRS LEAD UPWARD."
-    RD13 FCZ "YOU ARE IN A SMALL PARLOR. THE SERVANTS LIKELY GATHERED HERE WHEN OFF-DUTY."
-    RD14 FCZ "YOU ARE AT THE BOTTOM OF A PIT. THERE IS AN OPENING TO THE SOUTH."
-    RD21 FCZ "YOU ARE IN A SMALL BEDROOM. THERE ARE BEDS ALONG THE EAST AND WEST WALLS. A SMALL NIGHT STAND IS PAIRED WITH EACH BED."
-    RD29 FCZ "YOU ARE AT THE TOP OF THE STAIRWAY. PASSAGES LEAD EAST, WEST AND STAIRS LEAD SOUTH."
-    RD31 FCZ "YOU ARE AT AN INTERSECTION. PASSAGES LEAD NORTH, SOUTH, EAST AND WEST."
-    RD34 FCZ "RUBBLE BLOCKS THE WAY NORTH."
-    RD43 FCZ "YOU ARE IN A KITCHEN. THERE ARE STOVES ALONG THE SOUTH WALL. THERE IS A DUMBWAITER IN THE WEST CORNER."
-    RD46 FCZ "YOU ARE IN A SMALL WORKROOM. A WOODEN BENCH IS ON THE SOUTH WALL."
-    RD56 FCZ "YOU ARE IN A SMALL STOREROOM. IT SMELLS LIKE ROTTEN CHEESE."
-    RD63 FCZ "YOU ARE IN A SMALL STOREROOM. LARGE WOODEN RACKS LINE THE WALLS. IT SMELLS LIKE SOUR WINE."
-    RD65 FCZ "YOU ARE IN A LIBRARY. DUSTY BOOKS LINE SHELVES ON THE NORTH WALL. THE OTHER WALLS ARE DECORATED WITH THE HEADS OF EXOTIC ANIMALS."
-    RD70 FCZ "YOU ARE IN A SITTING ROOM. THERE IS A FIREPLACE ON THE NORTH WALL. LEATHER CHAIRS SIT FACING THE FIREPLACE."
-    RD74 FCZ "YOU ARE IN A SOLARIUM. DIFFUSE LIGHT ENTERS FROM MANY TALL WINDOWS. AN OPEN DOOR TO THE NORTH LEADS TO A BALCONY."
-    RD75 FCZ "YOU ARE ON A BALCONY. YOU ARE A LONG WAY UP! FOG OBSCURES THE SURROUNDING AREA. THE AIR IS COLD AND SMELLS DAMP."
-    RD76 FCZ "YOU ARE IN A DUMBWAITER."
-    RD77 FCZ "YOU ARE IN A BUTLERS PANTRY. WAIST HIGH COUNTERS LINE THE NORTH AND SOUTH WALLS."
-    RD79 FCZ "YOU ARE IN A LARGE ORNATE DINING ROOM. A LARGE TABLE IS SURROUNDED BY CHAIRS."
-    RD80 FCZ "YOU ARE IN A HUGE BALLROOM. CHAIRS LINE THE SIDES OF THE EAST AND WEST WALLS. WHAT GRAND GATHERINGS THIS ROOM MUST HAVE SEEN."
-    RD81 FCZ "YOU ARE IN A STORAGE ROOM. EMPTY SHELVES ALONG THE WALLS LIKELY ONCE HELD PRICELESS DINNERWARE."
-    RD83 FCZ "YOU ARE AT THE BOTTOM OF A GRAND STAIRCASE LEADING UP TO THE EAST."
-    RD84 FCZ "YOU ARE AT THE TOP OF A GRAND STAIRCASE LEADING DOWN TO THE WEST."
-    RD86 FCZ "YOU ARE IN A LUXURIOUS BEDROOM. A LARGE BED IS CENTERED ON THE NORTH WALL."
-    RD88 FCZ "YOU ARE IN A CHILD'S BEDROOM. A SMALL BED IS NESTLED AGAINST THE WEST WALL."
-    RD94 FCZ "YOU ARE IN THE MASTER BEDROOM. A LARGE FIREPLACE IS CENTERED ON THE NORTHWALL. A LARGE FOUR-POST BED IS ON THE EAST WALL. SMALL TABLES ON EITHER SIDE. TO THE WEST BEHIND A TATTERED CURTAIN IS AN OPENING."
-    RD95 FCZ "YOU ARE IN THE SERVANTS PASSAGEWAY."
-    RD96 FCZ "YOU ARE IN THE SERVANTS PASSAGEWAY. TO THE NORTH IS AN OPEN ELEVATOR."
-    RD97 FCZ "YOU ARE IN AN ELEVATOR."
+    RD0: FCZ "YOU ARE IN A SMALL DIMLY LIT ROOM. MAYBE A CLOSET? IT SMELLS LIKE BLEACH."
+    RD1: FCZ "THERE IS AN OPEN DOOR TO THE WEST."
+    RD5: FCZ "THERE IS A HOLE IN THE FLOOR JUST SOUTH OF HERE."
+    RD6: FCZ "YOU ARE IN A DINGY RESTROOM."
+    RD8: FCZ "YOU ARE IN A COMMON ROOM. THERE ARE CHAIRS AND A SMALL TABLE. CALL BELLS LINE THE EAST WALL. TO THE EAST IS A HALLWAY. TO THE WEST STAIRS LEAD UPWARD."
+    RD13: FCZ "YOU ARE IN A SMALL PARLOR. THE SERVANTS LIKELY GATHERED HERE WHEN OFF-DUTY."
+    RD14: FCZ "YOU ARE AT THE BOTTOM OF A PIT. THERE IS AN OPENING TO THE SOUTH."
+    RD21: FCZ "YOU ARE IN A SMALL BEDROOM. THERE ARE BEDS ALONG THE EAST AND WEST WALLS. A SMALL NIGHT STAND IS PAIRED WITH EACH BED."
+    RD29: FCZ "YOU ARE AT THE TOP OF THE STAIRWAY. PASSAGES LEAD EAST, WEST AND STAIRS LEAD SOUTH."
+    RD31: FCZ "YOU ARE AT AN INTERSECTION. PASSAGES LEAD NORTH, SOUTH, EAST AND WEST."
+    RD34: FCZ "RUBBLE BLOCKS THE WAY NORTH."
+    RD43: FCZ "YOU ARE IN A KITCHEN. THERE ARE STOVES ALONG THE SOUTH WALL. THERE IS A DUMBWAITER IN THE WEST CORNER."
+    RD46: FCZ "YOU ARE IN A SMALL WORKROOM. A WOODEN BENCH IS ON THE SOUTH WALL."
+    RD56: FCZ "YOU ARE IN A SMALL STOREROOM. IT SMELLS LIKE ROTTEN CHEESE."
+    RD63: FCZ "YOU ARE IN A SMALL STOREROOM. LARGE WOODEN RACKS LINE THE WALLS. IT SMELLS LIKE SOUR WINE."
+    RD65: FCZ "YOU ARE IN A LIBRARY. DUSTY BOOKS LINE SHELVES ON THE NORTH WALL. THE OTHER WALLS ARE DECORATED WITH THE HEADS OF EXOTIC ANIMALS."
+    RD70: FCZ "YOU ARE IN A SITTING ROOM. THERE IS A FIREPLACE ON THE NORTH WALL. LEATHER CHAIRS SIT FACING THE FIREPLACE."
+    RD74: FCZ "YOU ARE IN A SOLARIUM. DIFFUSE LIGHT ENTERS FROM MANY TALL WINDOWS. AN OPEN DOOR TO THE NORTH LEADS TO A BALCONY."
+    RD75: FCZ "YOU ARE ON A BALCONY. YOU ARE A LONG WAY UP! FOG OBSCURES THE SURROUNDING AREA. THE AIR IS COLD AND SMELLS DAMP."
+    RD76: FCZ "YOU ARE IN A DUMBWAITER."
+    RD77: FCZ "YOU ARE IN A BUTLERS PANTRY. WAIST HIGH COUNTERS LINE THE NORTH AND SOUTH WALLS."
+    RD79: FCZ "YOU ARE IN A LARGE ORNATE DINING ROOM. A LARGE TABLE IS SURROUNDED BY CHAIRS."
+    RD80: FCZ "YOU ARE IN A HUGE BALLROOM. CHAIRS LINE THE SIDES OF THE EAST AND WEST WALLS. WHAT GRAND GATHERINGS THIS ROOM MUST HAVE SEEN."
+    RD81: FCZ "YOU ARE IN A STORAGE ROOM. EMPTY SHELVES ALONG THE WALLS LIKELY ONCE HELD PRICELESS DINNERWARE."
+    RD83: FCZ "YOU ARE AT THE BOTTOM OF A GRAND STAIRCASE LEADING UP TO THE EAST."
+    RD84: FCZ "YOU ARE AT THE TOP OF A GRAND STAIRCASE LEADING DOWN TO THE WEST."
+    RD86: FCZ "YOU ARE IN A LUXURIOUS BEDROOM. A LARGE BED IS CENTERED ON THE NORTH WALL."
+    RD88: FCZ "YOU ARE IN A CHILD'S BEDROOM. A SMALL BED IS NESTLED AGAINST THE WEST WALL."
+    RD94: FCZ "YOU ARE IN THE MASTER BEDROOM. A LARGE FIREPLACE IS CENTERED ON THE NORTHWALL. A LARGE FOUR-POST BED IS ON THE EAST WALL. SMALL TABLES ON EITHER SIDE. TO THE WEST BEHIND A TATTERED CURTAIN IS AN OPENING."
+    RD95: FCZ "YOU ARE IN THE SERVANTS PASSAGEWAY."
+    RD96: FCZ "YOU ARE IN THE SERVANTS PASSAGEWAY. TO THE NORTH IS AN OPEN ELEVATOR."
+    RD97: FCZ "YOU ARE IN AN ELEVATOR."
 
-    EXIT_ROOM FCZ "YOU ARE ON THE GROUND OUTSIDE THE MANSION."
+    EXIT_ROOM: FCZ "YOU ARE ON THE GROUND OUTSIDE THE MANSION."
 
     ;---------------------------
     ; Decorator descriptions
     ;---------------------------
 
     ; doors
-    DOOR_PLAIN FCZ "DOOR"
-    DOOR_GREEN FCZ "GREEN DOOR"
-    DOOR_DOUBLE FCZ "ORNATE DOOR"
+    DOOR_PLAIN: FCZ "DOOR"
+    DOOR_GREEN: FCZ "GREEN DOOR"
+    DOOR_DOUBLE: FCZ "ORNATE DOOR"
 
     ; visual interest
-    SCONCE FCZ "LIGHT FLICKERS IN A WALL SCONCE."
-    SLIMY_STONE FCZ "THE WALLS ARE SLIMY AND MADE OF ROUGH STONE."
-    TILED FCZ "THE FLOOR AND WALLS ARE TILED."
-    DUSTY FCZ "DUST MOTES SWIRL IN THE AIR."
+    SCONCE: FCZ "LIGHT FLICKERS IN A WALL SCONCE."
+    SLIMY_STONE: FCZ "THE WALLS ARE SLIMY AND MADE OF ROUGH STONE."
+    TILED: FCZ "THE FLOOR AND WALLS ARE TILED."
+    DUSTY: FCZ "DUST MOTES SWIRL IN THE AIR."
 
     ; smells
-    MUSTY FCZ "THE AIR SMELLS MUSTY."
+    MUSTY: FCZ "THE AIR SMELLS MUSTY."
 
     ; sounds
-    DRIPPING FCZ "YOU HEAR WATER DRIPPING NEARBY."
-    INSECTS FCZ "A CRICKET CHIRPS SOFTLY."
-    CLOCK_TICK FCZ "YOU CAN HEAR A MECHANICAL CLOCK TICKING, TIK TOK."
-    MICE FCZ "YOU HEAR THE SOFT SQUEAK OF A MOUSE."
-    BARK FCZ "A DOG BARKS IN THE DISTANCE."
+    DRIPPING: FCZ "YOU HEAR WATER DRIPPING NEARBY."
+    INSECTS: FCZ "A CRICKET CHIRPS SOFTLY."
+    CLOCK_TICK: FCZ "YOU CAN HEAR A MECHANICAL CLOCK TICKING, TIK TOK."
+    MICE: FCZ "YOU HEAR THE SOFT SQUEAK OF A MOUSE."
+    BARK: FCZ "A DOG BARKS IN THE DISTANCE."
 
     ; feelings
-    DAMP FCZ "THE AIR FEELS COOL AND DAMP."
-    WATCHING FCZ "YOU FEEL LIKE SOMEONE IS WATCHING."
+    DAMP: FCZ "THE AIR FEELS COOL AND DAMP."
+    WATCHING: FCZ "YOU FEEL LIKE SOMEONE IS WATCHING."
 
     ; passages
-    NOSO FCZ "PASSAGES LEAD NORTH AND SOUTH."
-    EAWE FCZ "PASSAGES LEAD EAST AND WEST."
-    NOWE FCZ "PASSAGES LEAD NORTH AND WEST."
-    SOWE FCZ "PASSAGES LEAD WEST AND SOUTH."
-    NOEA FCZ "PASSAGES LEAD NORTH AND EAST."
-    SOEA FCZ "PASSAGES LEAD SOUTH AND EAST."
+    NOSO: FCZ "PASSAGES LEAD NORTH AND SOUTH."
+    EAWE: FCZ "PASSAGES LEAD EAST AND WEST."
+    NOWE: FCZ "PASSAGES LEAD NORTH AND WEST."
+    SOWE: FCZ "PASSAGES LEAD WEST AND SOUTH."
+    NOEA: FCZ "PASSAGES LEAD NORTH AND EAST."
+    SOEA: FCZ "PASSAGES LEAD SOUTH AND EAST."
 
-    NOSOWE FCZ "PASSAGES LEAD NORTH, SOUTH AND WEST."
-    EAWESO FCZ "PASSAGES LEAD EAST, WEST AND SOUTH."
-    NOSOEA FCZ "PASSAGES LEAD NORTH, SOUTH AND EAST."
+    NOSOWE: FCZ "PASSAGES LEAD NORTH, SOUTH AND WEST."
+    EAWESO: FCZ "PASSAGES LEAD EAST, WEST AND SOUTH."
+    NOSOEA: FCZ "PASSAGES LEAD NORTH, SOUTH AND EAST."
 
-    NORD FCZ "A PASSAGE LEADS NORTH."
-    EST FCZ "A PASSAGE LEADS EAST."
-    SUD FCZ "A PASSAGE LEADS SOUTH."
-    OEST FCZ "A PASSAGE LEADS WEST."
+    NORD: FCZ "A PASSAGE LEADS NORTH."
+    EST: FCZ "A PASSAGE LEADS EAST."
+    SUD: FCZ "A PASSAGE LEADS SOUTH."
+    OEST: FCZ "A PASSAGE LEADS WEST."
 
-    ST_EAWE FCZ "STAIRS LEAD EAST AND WEST."
-    ST_NOSO FCZ "STAIRS LEAD NORTH AND SOUTH."
-    ST_NOEA FCZ "STAIRS LEAD NORTH AND EAST."
+    ST_EAWE: FCZ "STAIRS LEAD EAST AND WEST."
+    ST_NOSO: FCZ "STAIRS LEAD NORTH AND SOUTH."
+    ST_NOEA: FCZ "STAIRS LEAD NORTH AND EAST."
 
     ;---------------------------
     ; Object descriptions
     ;---------------------------
-    RED_KEY FCZ "RED KEY"
-    BLUE_KEY FCZ "AZURE KEY"
-    GREEN_KEY FCZ "GREEN KEY"
-    GOLD_KEY FCZ "GOLD KEY"
-    PLAT_KEY FCZ "PLATINUM KEY"
-    SILVER_KEY FCZ "SILVER KEY"
-    BROWN_BOOK FCZ "LEATHER BOOK"
-    SMALL_SACK FCZ "SACK"
-    BACKPACK FCZ "BACKPACK"
-    MOP FCZ "MOP"
-    BLEACH FCZ "BLEACH BOTTLE"
-    CHEESE FCZ "SWISS CHEESE"
-    WINE FCZ "WINE BOTTLE"
-    HAMMER FCZ "HAMMER"
-    FLASHLIGHT FCZ "FLASHLIGHT"
-    BUCKET FCZ "BUCKET"
-    RING FCZ "RING"
-    ROPE FCZ "ROPE"
-    SKULL FCZ "SKULL"
-    LEAD_BAR FCZ "LEAD BAR"
-    STICK FCZ "STICK"
-    BROOM FCZ "BROOM"
+    RED_KEY: FCZ "RED KEY"
+    BLUE_KEY: FCZ "AZURE KEY"
+    GREEN_KEY: FCZ "GREEN KEY"
+    GOLD_KEY: FCZ "GOLD KEY"
+    PLAT_KEY: FCZ "PLATINUM KEY"
+    SILVER_KEY: FCZ "SILVER KEY"
+    BROWN_BOOK: FCZ "LEATHER BOOK"
+    SMALL_SACK: FCZ "SACK"
+    BACKPACK: FCZ "BACKPACK"
+    MOP: FCZ "MOP"
+    BLEACH: FCZ "BLEACH BOTTLE"
+    CHEESE: FCZ "SWISS CHEESE"
+    WINE: FCZ "WINE BOTTLE"
+    HAMMER: FCZ "HAMMER"
+    FLASHLIGHT: FCZ "FLASHLIGHT"
+    BUCKET: FCZ "BUCKET"
+    RING: FCZ "RING"
+    ROPE: FCZ "ROPE"
+    SKULL: FCZ "SKULL"
+    LEAD_BAR: FCZ "LEAD BAR"
+    STICK: FCZ "STICK"
+    BROOM: FCZ "BROOM"
 
 ;---------------------------
 ; Item table
 ; Format: description, room, read, props
 ;---------------------------
-ITEMS
+ITEMS:
     FDB RED_KEY     FCB 6   FDB NULL FCB NORMAL_ITEM
     FDB BLUE_KEY    FCB 13  FDB NULL FCB NORMAL_ITEM
     FDB GREEN_KEY   FCB 8   FDB NULL FCB NORMAL_ITEM
@@ -1321,16 +1320,16 @@ ITEMS
 
     FDB NULL    ; end of table
 
-LOOK_STR FCZ "LOOK"
-NO_STR FCZ "NORTH"
-SO_STR FCZ "SOUTH"
-EA_STR FCZ "EAST"
-WE_STR FCZ "WEST"
+LOOK_STR: FCZ "LOOK"
+NO_STR: FCZ "NORTH"
+SO_STR: FCZ "SOUTH"
+EA_STR: FCZ "EAST"
+WE_STR: FCZ "WEST"
 
 ;---------------------------
 ; format: str ptr, token
 ;---------------------------
-CMD_TABLE
+CMD_TABLE:
     FDB LOOK_STR FCB 1
     FDB NO_STR FCB 2
     FDB SO_STR FCB 3
@@ -1339,7 +1338,7 @@ CMD_TABLE
     FDB NULL        ; end of table
 
 ; format: token, action
-JMP_TABLE
+JMP_TABLE:
     FDB PASS
     FDB NORTH
     FDB SOUTH
@@ -1351,7 +1350,7 @@ JMP_TABLE
 ; Command jump table
 ; Format: char, function
 ;---------------------------
-CMDS
+CMDS:
     FCC "LO" FDB PASS           ; look around
     FCC "NO" FDB NORTH          ; move dirs
     FCC "SO" FDB SOUTH          
@@ -1387,7 +1386,7 @@ CMDS
 ; Decorations table
 ; Format: descriptor, room
 ;---------------------------
-DECORATIONS
+DECORATIONS:
     FDB DRIPPING FCB 0
     FDB NOSO FCB 1
     FDB NOSO FCB 2 FDB SCONCE FCB 2
@@ -1491,21 +1490,21 @@ DECORATIONS
 ; Door definitions 
 ; States: desc, props
 ;----------------------------------
-DOOR1 FDB DOOR_GREEN FCB 0
-DOOR2 FDB DOOR_PLAIN FCB 0
-DOOR3 FDB DOOR_PLAIN FCB 0
-DOOR4 FDB DOOR_PLAIN FCB 0
-DOOR5 FDB DOOR_PLAIN FCB 0
-DOOR6 FDB DOOR_PLAIN FCB 0
-DOOR7 FDB DOOR_PLAIN FCB 0
-DOOR8 FDB DOOR_PLAIN FCB 0
-DOOR9 FDB DOOR_DOUBLE FCB 0
+DOOR1: FDB DOOR_GREEN FCB 0
+DOOR2: FDB DOOR_PLAIN FCB 0
+DOOR3: FDB DOOR_PLAIN FCB 0
+DOOR4: FDB DOOR_PLAIN FCB 0
+DOOR5: FDB DOOR_PLAIN FCB 0
+DOOR6: FDB DOOR_PLAIN FCB 0
+DOOR7: FDB DOOR_PLAIN FCB 0
+DOOR8: FDB DOOR_PLAIN FCB 0
+DOOR9: FDB DOOR_DOUBLE FCB 0
 
 ;-----------------------------------
 ; Room Doors
 ; Props: ptr to door obj, room, wall
 ;-----------------------------------
-DOORS
+DOORS:
     FDB DOOR1 FCB 0 FCB EAST_WALL
     FDB DOOR1 FCB 1 FCB WEST_WALL
     FDB DOOR2 FCB 4 FCB EAST_WALL
@@ -1531,7 +1530,7 @@ DOORS
 ; Room table
 ; Format: roomdesc,N,S,E,W
 ;---------------------------
-ROOMS
+ROOMS:
     ; room 0
     FDB RD0
     FCB -1, -1, 1, -1   ; , $80 | $04
@@ -1932,7 +1931,7 @@ ROOMS
 ; transition table
 ; Format: action, from, to
 ;---------------------------------
-TRANSITIONS
+TRANSITIONS:
     FDB DW_ENTER_ACTION FCB 43, 76
     FDB FALL_ACTION     FCB 5, 14
     FDB DW_EXIT_ACTION  FCB 76, 77
@@ -1945,7 +1944,7 @@ TRANSITIONS
 ; Rules table
 ; format: predicate, action
 ;---------------------------
-RULES
+RULES:
     ; FDB NEVER, PASS                   ; do nothing test rule
     FDB ALWAYS,     SET_ITEMS_DEFAULT   ; set base inventory limit
     FDB HAVE_SACK,  SET_ITEMS_SACK      ; sack gives more items
@@ -1957,18 +1956,18 @@ RULES
 ;---------------------------
 ; Vars and structures
 ;---------------------------
-    ITEM_LIMIT FCB 0    ; limit of items carried, modified by rules
-    ROOM FCB 0          ; current room number
-    MOVE_COUNT FDB 0    ; total number of moves
-    DARK FCB 0          ; true if dark
+    ITEM_LIMIT: FCB 0    ; limit of items carried, modified by rules
+    ROOM: FCB 0          ; current room number
+    MOVE_COUNT: FDB 0    ; total number of moves
+    DARK: FCB 0          ; true if dark
 
-    CMD_BUF RMB 10      ; tokenized command buffer
+    CMD_BUF: RMB 10      ; tokenized command buffer
     
     ; player stats
-    HEALTH FCB STARTING_HEALTH      ; current HP
+    HEALTH: FCB STARTING_HEALTH      ; current HP
     ; ATTACK FCB 0                  ; attack damage
     ; DEFENSE FCB 0                 ; defence rating
 
-    SCORE FDB 0                     ; score achieved
+    SCORE: FDB 0                     ; score achieved
 
     END START

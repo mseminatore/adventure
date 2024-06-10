@@ -5,7 +5,7 @@
 ; Input: A = col, B = row
 ; Return: none
 ;-------------------------
-SETCURSOR
+SETCURSOR:
     PSHS D
     ANDA #$1F       ; clamp col [0..31]
     ANDB #$F        ; clamp row [0..15]
@@ -20,7 +20,7 @@ SETCURSOR
 ; Input: none
 ; Return: A = row, B = col
 ;---------------------------------
-GETCURSOR
+GETCURSOR:
     LDD CURPOS
     ANDB #$1F       ; col is [0..31]
 
@@ -41,7 +41,7 @@ GETCURSOR
 ; Input: none
 ; Return: none
 ;-------------------
-WAIT
+WAIT:
     ; PSHS A, DP, Y, U
     JSR [CHARIN]    ; poll keyboard
     BEQ WAIT        ; wait for keypress
@@ -54,7 +54,7 @@ WAIT
 ; Input: none
 ; Return: none
 ;--------------
-CLS
+CLS:
     PSHS A, B, X
     LDX #VIDRAM
     STX CURPOS      ; RESET CURSOR POSITION
@@ -62,7 +62,7 @@ CLS
     LDA #BLANK
     TFR A, B
 
-CLS01
+CLS01:
     STD , X++
     CMPX #VIDEND
     BLT CLS01
@@ -74,11 +74,11 @@ CLS01
 ; Input: none
 ; Return: none
 ;-------------------------------------
-SCROLL
+SCROLL:
     PSHS A, B, X
     LDX #VIDRAM         ; get start of video ram
 
-SCROLL01
+SCROLL01:
     LDD 32, X           ; get two chars from next line
     STD ,X++            ; store them in current line
     CMPX #VIDSCROLL     ; continue until last-1 line
@@ -97,7 +97,7 @@ SCROLL01
 ; Input: A is char to print
 ; Return: none
 ;-------------------------------------
-PUTC
+PUTC:
     PSHS A, B, X
     LDX CURPOS          ; get cursor position
     CMPA #BS            ; check for backspace
@@ -110,12 +110,12 @@ PUTC
     STA ,-X             ; erase current char
     BRA PUTC06          ; update cursor, check scroll and done
 
-PUTC01
+PUTC01:
     CMPA #CR            ; check for carriage return
     BNE PUTC03          ; if not, skip
     LDX CURPOS          ; get cursor pos
 
-PUTC02                  ; blank rest of line
+PUTC02:                  ; blank rest of line
     LDA #BLANK          ; (re)load blank char
     STA ,X+             ; store it at curpos
     TFR X, D            ; copy curpos (note: destroys A)
@@ -123,7 +123,7 @@ PUTC02                  ; blank rest of line
     BNE PUTC02          ; if not, do it again
     BRA PUTC06          ; done blanking rest of line
 
-PUTC03
+PUTC03:
     CMPA #SPACE
     BCS PUTC_DONE       ; skip control chars
     TSTA
@@ -134,20 +134,20 @@ PUTC03
     BCS PUTC05          ; if upper alpha print it
     ANDA #$DF           ; clear bit 5, force lower to upper
 
-PUTC04
+PUTC04:
     EORA #$40           ; toggle bit 6, upper/lower case
 
-PUTC05
+PUTC05:
     STA ,X+             ; store A to screen and inc cursor
 
-PUTC06
+PUTC06:
     STX CURPOS          ; save new cursor position
     CMPX #VIDEND        ; see if we need to scroll
     BLS PUTC_DONE       ; finished!
 
     JSR SCROLL          ; scroll the screen
 
-PUTC_DONE
+PUTC_DONE:
     PULS A, B, X, PC
 
 ;-------------------------------------
@@ -156,12 +156,12 @@ PUTC_DONE
 ; Input: X ptr to string
 ; Return: count of chars in A
 ;-------------------------------------
-CHARS_IN_WORD
+CHARS_IN_WORD:
     PSHS B, X
 
     CLRA            ; clear count
 
-CHARS_IN_WORD01
+CHARS_IN_WORD01:
     LDB ,X+                     ; get next char
     CMPB #EOS                   ; reached end of string?
     BEQ CHARS_IN_WORD_DONE      ; if so return
@@ -172,7 +172,7 @@ CHARS_IN_WORD01
     INCA
     BRA CHARS_IN_WORD01
 
-CHARS_IN_WORD_DONE
+CHARS_IN_WORD_DONE:
     PULS B, X, PC
 
 ;-------------------------------------
@@ -181,7 +181,7 @@ CHARS_IN_WORD_DONE
 ; Input: none
 ; Return: count of chars in A
 ;-------------------------------------
-CHARS_LEFT
+CHARS_LEFT:
     PSHS B, X
 
     LDD CURPOS          ; get cursor pos
@@ -199,7 +199,7 @@ CHARS_LEFT
 ; Input: X ptr to string
 ; Return: Z = 1 if wrap required
 ;-------------------------------------
-WORD_WRAP
+WORD_WRAP:
     PSHS A
 
     JSR CHARS_IN_WORD   ; get count of chars in next word
@@ -214,7 +214,7 @@ WORD_WRAP
     PULS A
     PULS A, PC
 
-WORD_WRAP_NEEDED
+WORD_WRAP_NEEDED:
     SETZ
     PULS A
     PULS A, PC
@@ -225,17 +225,17 @@ WORD_WRAP_NEEDED
 ; Input: X ptr to string
 ; Return: none
 ;-------------------------------------
-PUTS
+PUTS:
     PSHS A, X       ; save A and X
 
-PUTS01
+PUTS01:
     JSR WORD_WRAP   ; see if word wrap needed
     BNE PUTS02      ; if not skip
 
     LDA #CR
     JSR PUTC
 
- PUTS02   
+ PUTS02:   
     LDA ,X+         ; get next char
     CMPA #EOS       ; see if end of string
     BEQ PUTS_DONE   ; if so we are done
@@ -243,7 +243,7 @@ PUTS01
     JSR PUTC        ; otherwise put char on screen
     BRA PUTS01      ; do it again
 
-PUTS_DONE
+PUTS_DONE:
     PULS A, X, PC   ; restore regs and return
 
 ;-------------------
@@ -252,10 +252,10 @@ PUTS_DONE
 ; Input: none
 ; Return: char in A
 ;-------------------
-GETC
+GETC:
     PSHS DP, Y, U       ; save regs
 
-GETC01
+GETC01:
     JSR [CHARIN]    ; poll keyboard
     BEQ GETC01      ; wait for keypress
 
@@ -267,10 +267,10 @@ GETC01
 ; Input: X points to buffer
 ; Return: string in buffer
 ;---------------------------
-GETS
+GETS:
     PSHS A, X       ; save A and X
 
-GETS01
+GETS01:
     JSR GETC        ; read an input char
     CMPA #CR        ; check for return
     BEQ GETS_DONE   ; if so we are done
@@ -284,13 +284,14 @@ GETS01
     LEAX -1,X       ; erase last char from buffer
     BRA GETS03
 
-GETS02
+GETS02:
     STA ,X+         ; otherwise add char to buf
-GETS03
+
+GETS03:
     JSR PUTC        ; echo char to screen
     BRA GETS01      ; get another char
 
-GETS_DONE
+GETS_DONE:
     CLRA            ; asciiz terminator
     STA ,X          ; make asciiz
     PULS A, X, PC   ; restore regs and return
@@ -298,13 +299,13 @@ GETS_DONE
 ;--------------
 ; quit program
 ;--------------
-RESET
+RESET:
     CLR RSTFLG          ; warm/cold reset?
     JMP [RESET_VECTOR]  ; reboot
 
 ;---------------------------------
 ; data variables
 ;---------------------------------
-    INBUF RMB 32        ; input buffer
-    INCUR FDB INBUF     ; input cursor
-    CURPOS FDB VIDRAM   ; current cursor position
+    INBUF: RMB 32        ; input buffer
+    INCUR: FDB INBUF     ; input cursor
+    CURPOS: FDB VIDRAM   ; current cursor position

@@ -1,5 +1,5 @@
     RMB 7
-STRTMP_TOP
+STRTMP_TOP:
 
 ;--------------------------------
 ; Convert dec string to 8b int
@@ -7,7 +7,7 @@ STRTMP_TOP
 ; Input: X ptr to str
 ; Return: A is integer
 ;--------------------------------
-ATOI
+ATOI:
     PSHS X
 
     PULS X, PC
@@ -18,7 +18,7 @@ ATOI
 ; Input: X ptr to str
 ; Return: D is integer
 ;--------------------------------
-ATOI16
+ATOI16:
     PSHS X
 
     PULS X, PC
@@ -29,13 +29,13 @@ ATOI16
 ; Input: byte to print in A
 ; Return: none
 ;--------------------------------
-PRINT_DEC_BYTE
+PRINT_DEC_BYTE:
     PSHS A, B, U        ; preserve A and U
     LDU #STRTMP_TOP     ; set U stack at end of temp string
     CLRB
     PSHU B              ; store string terminator
 
-PDB01
+PDB01:
     TFR A, B            ; move A to B (divisor)
     LDA #10             ; divide by 10
     JSR DIVMOD          ; get remainder
@@ -56,13 +56,13 @@ PDB01
 ; Input: word to print in X
 ; Return: none
 ;--------------------------------
-PRINT_DEC_WORD
+PRINT_DEC_WORD:
     PSHS D, X, U        ; preserve D, X and U
     LDU #STRTMP_TOP     ; set U stack at end of temp string
     LDA #0              ; put string terminator in A
     PSHU A              ; put it in temp string
     
-PDW01
+PDW01:
     TFR X, D            ; move X to D (divisor)
     LDX #10             ; divide by 10
     JSR DIVMOD16        ; get remainder
@@ -83,7 +83,7 @@ PDW01
 ; Input: byte in A
 ; Return: none
 ;--------------------------------
-PRINT_HEX_NIBBLE
+PRINT_HEX_NIBBLE:
     PSHS A
     CMPA #9
     BGT PRINT_HEX_LETTER
@@ -92,12 +92,12 @@ PRINT_HEX_NIBBLE
     JSR PUTC
     BRA PRINT_HEX_DONE
 
-PRINT_HEX_LETTER
+PRINT_HEX_LETTER:
     SUBA #10
     ADDA #'A'
     JSR PUTC
 
-PRINT_HEX_DONE
+PRINT_HEX_DONE:
     PULS A, PC
 
 ;-------------------
@@ -106,7 +106,7 @@ PRINT_HEX_DONE
 ; Input: byte in A
 ; Return: none
 ;-------------------
-PRINT_HEX_BYTE
+PRINT_HEX_BYTE:
     PSHS A              ; save A
     PSHS A              ; make a copy of A
 
@@ -129,7 +129,7 @@ PRINT_HEX_BYTE
 ; Input: word in X
 ; Return: none
 ;-------------------
-PRINT_HEX_WORD
+PRINT_HEX_WORD:
     PSHS D, X
     TFR X, D
 
