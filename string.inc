@@ -49,27 +49,27 @@ STRCHR_DONE
 ; Input: ptr to strings in X, Y
 ; Return: Zero set on equal
 ;--------------------------------
-STRCMP
+STREQ
     PSHS A, B
 
     CLRB
 
-STRCMP01
+STREQ01
     LDA ,X              ; get char from str1
     CMPA ,Y             ; compare to char from str2
-    BNE STRCMP_DONE     ; different, so strings don't match
+    BNE STREQ_DONE     ; different, so strings don't match
 
     ; chars match but check for both zeros, if so then strings match
     CMPB ,X             ; see if str1 finished
-    BEQ STRCMP_DONE     ; if so strings match
+    BEQ STREQ_DONE     ; if so strings match
 
-STRCMP02
+STREQ02
     LEAX 1, X           ; advance both string pointers
     LEAY 1, Y
 
-    BRA STRCMP01
+    BRA STREQ01
 
-STRCMP_DONE
+STREQ_DONE
     PULS A, B, PC
 
 ;--------------------------------
