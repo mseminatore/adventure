@@ -1,6 +1,6 @@
 TARGET = adv.bin
 SRC = adventure.asm
-DEPS = stddefs.inc gamedefs.inc io.inc print.inc string.inc
+DEPS = stddefs.inc gamedefs.inc io.inc print.inc string.inc math.inc
 ASM = as09
 ASMFLAGS = -b
 DSKFILE = ADV.DSK
