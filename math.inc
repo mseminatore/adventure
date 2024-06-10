@@ -41,3 +41,33 @@ DIVMOD16_02:
 
     LEAS 2,S        ; pop X off stack
     RTS
+
+;--------------------------------------
+; Generate random number [0..255]
+; Input: none
+; Return: random 8b value in B
+;--------------------------------------
+; RND8:
+;     PSHS A, X
+
+;     LDA RND8_SEED
+;     LDB #33
+;     MUL
+
+;     LDX #251
+;     JSR DIVMOD16
+
+;     STB RND8_SEED
+
+;     PULS A, X, PC
+
+;--------------------------------------
+; Generate random number [0..65535]
+; Input: none
+; Return: random 16b value in D
+;--------------------------------------
+; RND16:
+;     RTS
+
+; RND8_SEED: FCB 1
+; RND16_SEED: FDB 1
