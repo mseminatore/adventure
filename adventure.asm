@@ -47,7 +47,7 @@ GAME_LOOP:
 
     JSR CHECK_ITEMS         ; print any items
 
-    ; JSR CHECK_DOORS         ; print any doors
+    JSR CHECK_DOORS         ; print any doors
 
 GAME_LOOP01:
     LDA #CR         ; newlines
@@ -106,7 +106,53 @@ CHECK_DECORATIONS_DONE:
 ; Return: none
 ;----------------------------
 CHECK_DOORS:
-    PSHS A, X, Y, U
+    PSHS A, B, X, Y, U
+
+    JSR GET_ROOM_PTR    ; get room ptr in X
+
+    LEAY 2, X           ; get NSEW rooms ptr
+    CLRB                ; clear offset
+
+CHECK_DOORS01:
+    CMPB #6
+    BGT CHECK_DOORS_DONE
+
+    LDX B, Y            ; get next room dir
+    CMPX #-1            ; invalid?
+    BEQ CHECK_DOORS03   ; if so, next room dir
+
+    CMPX #255           ; no door?
+    BLS CHECK_DOORS03   ; if so, next room dir
+
+    TFR X, U
+    LDX #ONTHE_MSG
+    JSR PUTS
+
+    LDX #WALL_MSG           ; print which wall
+    LDX B, X
+    JSR PUTS
+
+    LDX #ITEM_MSG1          ; print 'there is a '
+    JSR PUTS
+
+    LDU ,U                  ; get door insta ptr
+    LDX ,U                  ; get door desc ptr
+    JSR PUTS
+
+    LDA 2, U                ; get door props
+    BITA #DOOR_OPEN         ; check door state
+    BNE CHECK_DOORS02       ; if closed
+
+    LDX #WHICH_IS_CLOSED
+    JSR PUTS
+
+CHECK_DOORS02:
+    LDA #'.'
+    JSR PUTC
+
+CHECK_DOORS03:
+    ADDB #2             ; inc offset
+    BRA CHECK_DOORS01   ; keep looking
 
 ;     LDY #DOORS      ; get door table ptr
 ;     LDA ROOM        ; get current room num
@@ -119,8 +165,6 @@ CHECK_DOORS:
 ;     CMPA DOOR_ROOM_OFFSET, Y ; is door in room?
 ;     BNE CHECK_DOORS02       ; if not go to next door
 
-;     LDX #ONTHE_MSG
-;     JSR PUTS
 
 ;     LDA DOOR_WALL_OFFSET, Y ; get wall prop
 ;     ASLA                
@@ -141,8 +185,8 @@ CHECK_DOORS:
 ;     LEAY DOOR_SIZE, Y       ; get next door ptr
 ;     BRA CHECK_DOORS01
 
-; CHECK_DOORS_DONE:
-    PULS A, X, Y, U, PC
+CHECK_DOORS_DONE:
+    PULS A, B, X, Y, U, PC
 
 ;----------------------------
 ; Execute room rules
@@ -205,6 +249,15 @@ CHECK_ITEMS02:
 
 CHECK_ITEMS_DONE:
     PULS A, X, Y, U, PC
+
+;----------------------------
+; Open room door
+;
+; Input: none
+; Return: none
+;----------------------------
+OPEN_CMD:
+    RTS
 
 ;----------------------------
 ; Display pack items
@@ -1150,6 +1203,8 @@ INCLUDE "math.inc"
 
     WALL_MSG: FDB NORTH_MSG, SOUTH_MSG, EAST_MSG, WEST_MSG
 
+    WHICH_IS_CLOSED: FCZ " WHICH IS CLOSED"
+
     ITEM_MSG1: FCZ " THERE IS A "
     ITEM_MSG2: FCZ " HERE."
     THEREISNO: FCZ "THERE IS NO SUCH ITEM HERE.\r\r"
@@ -1376,9 +1431,9 @@ CMDS:
     FCC "EA" FDB EAST
     FCC "WE" FDB WEST
     FCC "QU" FDB RESET          ; quit game
-    FCC "IN" FDB INVENTORY_CMD      ; display inventory
-    FCC "PA" FDB INVENTORY_CMD      ; display inventory
-    FCC "OP" FDB PASS           ; open door
+    FCC "IN" FDB INVENTORY_CMD  ; display inventory
+    FCC "PA" FDB INVENTORY_CMD  ; display inventory
+    FCC "OP" FDB OPEN_CMD       ; open door
     FCC "DR" FDB DROP_CMD       ; drop an object
     FCC "GE" FDB GET_CMD        ; get an objectø
     FCC "TA" FDB GET_CMD        ; take an object
@@ -1509,7 +1564,7 @@ DECORATIONS:
 ; Door instances
 ; States: desc, props
 ;----------------------------------
-DINST1: FDB DOOR_GREEN FCB DOOR_OPEN
+DINST1: FDB DOOR_GREEN FCB 0; DOOR_OPEN
 ; DOOR2: FDB DOOR_PLAIN FCB 0
 ; DOOR3: FDB DOOR_PLAIN FCB 0
 ; DOOR4: FDB DOOR_PLAIN FCB 0
