@@ -250,6 +250,42 @@ CHECK_ITEMS02:
 CHECK_ITEMS_DONE:
     PULS A, X, Y, U, PC
 
+;-------------------------------
+; Get door ptr for room
+;
+; Input: none
+; Return: door ptr in X or NULL
+;-------------------------------
+GET_ROOM_DOOR_PTR:
+    PSHS B, Y
+
+    JSR GET_ROOM_PTR    ; get room ptr in X
+    
+    LEAY 2, X           ; get NSEW rooms ptr 
+    CLRB                ; clear offset
+
+GET_ROOM01:
+    CMPB #6
+    BGT GET_ROOM_DONE
+    
+    LDX B, Y            ; get room for dir
+    CMPX #-1            ; invalid?
+    BEQ GET_ROOM02      ; if so get next room dir
+
+    CMPX #255           ; is open passage?
+    BLS GET_ROOM02      ; if so get next room dir
+
+    ; X has door ptr
+    PULS B, Y, PC
+
+GET_ROOM02:
+    ADDB #2
+    BRA GET_ROOM01
+
+GET_ROOM_DONE:
+    LDX #0
+    PULS B, Y, PC
+
 ;----------------------------
 ; Open room door
 ;
@@ -257,46 +293,47 @@ CHECK_ITEMS_DONE:
 ; Return: none
 ;----------------------------
 OPEN_CMD:
-    PSHS A, B, X, Y
+    PSHS A, X
 
-    JSR GET_ROOM_PTR    ; get room ptr in X
+    JSR GET_ROOM_DOOR_PTR    ; get room door ptr in X
+    CMPX #NULL
+    BEQ OPEN_NO_DOOR
 
-    LEAY 2, X           ; get NSEW rooms ptr 
-    CLRB                ; clear offset
-
-OPEN_CMD01:
-    CMPB #6
-    BGT OPEN_CMD_DONE
-
-    LDX B, Y
-    CMPX #-1
-    BEQ OPEN_CMD02
-
-    CMPX #255
-    BLS OPEN_CMD02
-
-    ; X has door ptr
-    LDX ,X              ; X now has door inst
+    LDX ,X              ; X now has door inst ptr
     LDA #DOOR_OPEN
-    ORA 2,X
-    STA 2, X
+    ORA 2, X            ; turn on door open bit
+    STA 2, X            ; update door
 
     LDX #DOOR_OPEN_MSG
     JSR PUTS
     BRA OPEN_CMD_DONE
 
-OPEN_CMD02:
-    ADDB #2
-    BRA OPEN_CMD01
+OPEN_NO_DOOR:
+    LDX #NO_DOOR_MSG
+    JSR PUTS
 
 OPEN_CMD_DONE:
-    PULS A, B, X, Y, PC
+    PULS A, X, PC
 
 ;----------------------------
 ; Close room door
 ;----------------------------
 CLOSE_CMD:
-    RTS
+    PSHS A, X
+
+    JSR GET_ROOM_DOOR_PTR    ; get room door ptr in X
+    CMPX #NULL
+    BEQ OPEN_NO_DOOR
+
+    LDX ,X              ; X now has door inst ptr
+    LDA #~DOOR_OPEN
+    ANDA 2, X            ; turn on door open bit
+    STA 2, X            ; update door
+
+    LDX #DOOR_CLOSED_MSG
+    JSR PUTS
+  
+    PULS A, X, PC
 
 ;----------------------------
 ; Display pack items
@@ -1200,7 +1237,8 @@ INCLUDE "math.inc"
     NOMOVE: FCZ "YOU CAN'T GO THAT WAY!\r\r"
     DOOR_CLOSED_MSG: FCZ "THE DOOR IS CLOSED.\r\r"
     DOOR_OPEN_MSG: FCZ "THE DOOR IS OPEN.\r\r"
-
+    NO_DOOR_MSG: FCZ "THERE IS NO DOOR HERE!\r\r"
+    
     DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
     WIN_MSG: FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
     DIE_MSG: FCZ "YOU FALL TO YOUR DEATH AND MAKE QUITE A MESS!\r\r"
