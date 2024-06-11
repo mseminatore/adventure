@@ -47,7 +47,7 @@ GAME_LOOP:
 
     JSR CHECK_ITEMS         ; print any items
 
-    JSR CHECK_DOORS         ; print any doors
+    ; JSR CHECK_DOORS         ; print any doors
 
 GAME_LOOP01:
     LDA #CR         ; newlines
@@ -108,40 +108,40 @@ CHECK_DECORATIONS_DONE:
 CHECK_DOORS:
     PSHS A, X, Y, U
 
-    LDY #DOORS      ; get door table ptr
-    LDA ROOM        ; get current room num
+;     LDY #DOORS      ; get door table ptr
+;     LDA ROOM        ; get current room num
 
-CHECK_DOORS01:
-    LDU ,Y                  ; get door obj ptr
-    CMPU #NULL              ; is it NULL?
-    BEQ CHECK_DOORS_DONE    ; if so done
+; CHECK_DOORS01:
+;     LDU ,Y                  ; get door obj ptr
+;     CMPU #NULL              ; is it NULL?
+;     BEQ CHECK_DOORS_DONE    ; if so done
 
-    CMPA DOOR_ROOM_OFFSET, Y ; is door in room?
-    BNE CHECK_DOORS02       ; if not go to next door
+;     CMPA DOOR_ROOM_OFFSET, Y ; is door in room?
+;     BNE CHECK_DOORS02       ; if not go to next door
 
-    LDX #ONTHE_MSG
-    JSR PUTS
+;     LDX #ONTHE_MSG
+;     JSR PUTS
 
-    LDA DOOR_WALL_OFFSET, Y ; get wall prop
-    ASLA                
-    LDX #WALL_MSG
-    LDX A, X
-    JSR PUTS
+;     LDA DOOR_WALL_OFFSET, Y ; get wall prop
+;     ASLA                
+;     LDX #WALL_MSG
+;     LDX A, X
+;     JSR PUTS
 
-    LDX #ITEM_MSG1          ; print 'there is a '
-    JSR PUTS
+;     LDX #ITEM_MSG1          ; print 'there is a '
+;     JSR PUTS
 
-    LDX ,U                  ; print door description
-    JSR PUTS
+;     LDX ,U                  ; print door description
+;     JSR PUTS
 
-    LDA #'.'
-    JSR PUTC
+;     LDA #'.'
+;     JSR PUTC
     
-CHECK_DOORS02:
-    LEAY DOOR_SIZE, Y       ; get next door ptr
-    BRA CHECK_DOORS01
+; CHECK_DOORS02:
+;     LEAY DOOR_SIZE, Y       ; get next door ptr
+;     BRA CHECK_DOORS01
 
-CHECK_DOORS_DONE:
+; CHECK_DOORS_DONE:
     PULS A, X, Y, U, PC
 
 ;----------------------------
@@ -738,11 +738,19 @@ MOVE:
     BEQ MOVE_ERR            ; if so show err message
 
     CMPD #255
-    BLS MOVE_OPEN           ; TODO replace with door logic
+    BLS MOVE_OPEN           ; no door, go ahead and move
 
     ; D has door ptr
-    ; is door open?
-    ; if not print msg and return
+    TFR D, Y                ; move door ptr to Y
+    LDB 2, Y                ; get connecting room
+    LDY ,Y                  ; get door instance ptr
+    LDA 2, Y                ; get door props
+    BITA #DOOR_OPEN         ; is door open?
+    BNE MOVE_OPEN           ; if so move
+
+    LDX #DOOR_CLOSED_MSG    ; if not print message
+    JSR PUTS
+    BRA MOVE_DONE           ; and return
 
 MOVE_OPEN:
     JSR PUTS                ; print move message
@@ -750,12 +758,13 @@ MOVE_OPEN:
     JSR CHECK_TRANSITION    ; check for any movement transition actions
 
     STA ROOM                ; otherwise update room
-    PULS A, X, Y, PC
+    BRA MOVE_DONE           ; and return
 
 MOVE_ERR:
     LDX #NOMOVE             ; print move err msg
     JSR PUTS
 
+MOVE_DONE:
     PULS A, X, Y, PC
 
 ;-------------------------
@@ -1097,6 +1106,7 @@ INCLUDE "math.inc"
     WELCOME_MSG1: FCZ "\r\r\r\r  WELCOME TO mystery mansion!\r\r     INTERACTIVE FICTION BY\r  MARK AND MATTHEW SEMINATORE\r\r      COPYRIGHT (C) 2024\r      ALL RIGHTS RESERVED."
 
     NOMOVE: FCZ "YOU CAN'T GO THAT WAY!\r\r"
+    DOOR_CLOSED_MSG: FCZ "THE DOOR IS CLOSED.\r\r"
 
     DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
     WIN_MSG: FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
@@ -1496,44 +1506,43 @@ DECORATIONS:
     FDB NULL    ; end of table
 
 ;----------------------------------
-; Door definitions 
+; Door instances
 ; States: desc, props
 ;----------------------------------
-DOOR1: FDB DOOR_GREEN FCB 0
-DOOR2: FDB DOOR_PLAIN FCB 0
-DOOR3: FDB DOOR_PLAIN FCB 0
-DOOR4: FDB DOOR_PLAIN FCB 0
-DOOR5: FDB DOOR_PLAIN FCB 0
-DOOR6: FDB DOOR_PLAIN FCB 0
-DOOR7: FDB DOOR_PLAIN FCB 0
-DOOR8: FDB DOOR_PLAIN FCB 0
-DOOR9: FDB DOOR_DOUBLE FCB 0
+DINST1: FDB DOOR_GREEN FCB DOOR_OPEN
+; DOOR2: FDB DOOR_PLAIN FCB 0
+; DOOR3: FDB DOOR_PLAIN FCB 0
+; DOOR4: FDB DOOR_PLAIN FCB 0
+; DOOR5: FDB DOOR_PLAIN FCB 0
+; DOOR6: FDB DOOR_PLAIN FCB 0
+; DOOR7: FDB DOOR_PLAIN FCB 0
+; DOOR8: FDB DOOR_PLAIN FCB 0
+; DOOR9: FDB DOOR_DOUBLE FCB 0
 
 ;-----------------------------------
 ; Room Doors
-; Props: ptr to door obj, room, wall
+; Props: ptr to door inst, room
 ;-----------------------------------
-DOORS:
-    FDB DOOR1 FCB 0 FCB EAST_WALL
-    FDB DOOR1 FCB 1 FCB WEST_WALL
-    FDB DOOR2 FCB 4 FCB EAST_WALL
-    FDB DOOR2 FCB 6 FCB WEST_WALL
-    FDB DOOR3 FCB 20 FCB NORTH_WALL
-    FDB DOOR3 FCB 21 FCB SOUTH_WALL
-    FDB DOOR4 FCB 24 FCB NORTH_WALL
-    FDB DOOR4 FCB 23 FCB SOUTH_WALL
-    FDB DOOR5 FCB 80 FCB NORTH_WALL
-    FDB DOOR5 FCB 81 FCB SOUTH_WALL
-    FDB DOOR6 FCB 87 FCB EAST_WALL
-    FDB DOOR6 FCB 88 FCB WEST_WALL
-    FDB DOOR7 FCB 85 FCB EAST_WALL
-    FDB DOOR7 FCB 86 FCB WEST_WALL
-    FDB DOOR8 FCB 91 FCB EAST_WALL
-    FDB DOOR8 FCB 92 FCB WEST_WALL
-    FDB DOOR9 FCB 93 FCB NORTH_WALL
-    FDB DOOR9 FCB 94 FCB SOUTH_WALL
+DOOR1:  FDB DINST1 FCB 1
+DOOR2:  FDB DINST1 FCB 0
 
-    FDB NULL
+    ; FDB DOOR1 FCB 1 FCB WEST_WALL
+    ; FDB DOOR2 FCB 4 FCB EAST_WALL
+    ; FDB DOOR2 FCB 6 FCB WEST_WALL
+    ; FDB DOOR3 FCB 20 FCB NORTH_WALL
+    ; FDB DOOR3 FCB 21 FCB SOUTH_WALL
+    ; FDB DOOR4 FCB 24 FCB NORTH_WALL
+    ; FDB DOOR4 FCB 23 FCB SOUTH_WALL
+    ; FDB DOOR5 FCB 80 FCB NORTH_WALL
+    ; FDB DOOR5 FCB 81 FCB SOUTH_WALL
+    ; FDB DOOR6 FCB 87 FCB EAST_WALL
+    ; FDB DOOR6 FCB 88 FCB WEST_WALL
+    ; FDB DOOR7 FCB 85 FCB EAST_WALL
+    ; FDB DOOR7 FCB 86 FCB WEST_WALL
+    ; FDB DOOR8 FCB 91 FCB EAST_WALL
+    ; FDB DOOR8 FCB 92 FCB WEST_WALL
+    ; FDB DOOR9 FCB 93 FCB NORTH_WALL
+    ; FDB DOOR9 FCB 94 FCB SOUTH_WALL
 
 ;---------------------------
 ; Room table
@@ -1542,11 +1551,11 @@ DOORS:
 ROOMS:
     ; room 0
     FDB RD0
-    FDB -1, -1, 1, -1   ; , $80 | $04
+    FDB -1, -1, DOOR1, -1
 
     ; room 1
     FDB HALL
-    FDB 2, 3, -1, 0
+    FDB 2, 3, -1, DOOR2
 
     ; room 2
     FDB HALL
