@@ -257,6 +257,45 @@ CHECK_ITEMS_DONE:
 ; Return: none
 ;----------------------------
 OPEN_CMD:
+    PSHS A, B, X, Y
+
+    JSR GET_ROOM_PTR    ; get room ptr in X
+
+    LEAY 2, X           ; get NSEW rooms ptr 
+    CLRB                ; clear offset
+
+OPEN_CMD01:
+    CMPB #6
+    BGT OPEN_CMD_DONE
+
+    LDX B, Y
+    CMPX #-1
+    BEQ OPEN_CMD02
+
+    CMPX #255
+    BLS OPEN_CMD02
+
+    ; X has door ptr
+    LDX ,X              ; X now has door inst
+    LDA #DOOR_OPEN
+    ORA 2,X
+    STA 2, X
+
+    LDX #DOOR_OPEN_MSG
+    JSR PUTS
+    BRA OPEN_CMD_DONE
+
+OPEN_CMD02:
+    ADDB #2
+    BRA OPEN_CMD01
+
+OPEN_CMD_DONE:
+    PULS A, B, X, Y, PC
+
+;----------------------------
+; Close room door
+;----------------------------
+CLOSE_CMD:
     RTS
 
 ;----------------------------
@@ -1160,6 +1199,7 @@ INCLUDE "math.inc"
 
     NOMOVE: FCZ "YOU CAN'T GO THAT WAY!\r\r"
     DOOR_CLOSED_MSG: FCZ "THE DOOR IS CLOSED.\r\r"
+    DOOR_OPEN_MSG: FCZ "THE DOOR IS OPEN.\r\r"
 
     DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
     WIN_MSG: FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
@@ -1439,7 +1479,7 @@ CMDS:
     FCC "TA" FDB GET_CMD        ; take an object
     FCC "MO" FDB MOVES          ; display move count
     FCC "??" FDB PASS           ; help command
-    FCC "CL" FDB PASS           ; close door
+    FCC "CL" FDB CLOSE_CMD      ; close door
     FCC "HE" FDB HEALTH_CMD     ; display health
     FCC "SC" FDB SCORE_CMD      ; display score
     FCC "US" FDB PASS           ; use an object
