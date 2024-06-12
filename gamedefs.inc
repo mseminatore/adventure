@@ -14,17 +14,12 @@
     WEST_WALL   EQU 3
 
     ; door struct
-    DOOR_SIZE EQU 4
+    DOOR_SIZE EQU 3
     DOOR_PTR_OFFSET EQU 0
     DOOR_ROOM_OFFSET EQU 2
-    DOOR_WALL_OFFSET EQU 3
 
-    DOBJ_DESC_OFFSET EQU 0
-    DOBJ_PROP_OFFSET EQU 2
-
-    ; door states
-    OPEN_STATE      EQU 1
-    LOCKED_STATE    EQU 2
+    DINST_DESC_OFFSET EQU 0
+    DINST_PROP_OFFSET EQU 2
 
     ; room definitions
     ROOM_START  EQU 0
@@ -33,9 +28,9 @@
     ROOM_DUMP   EQU 253         ; where broken/used items go
 
     ; item carry limits
-    DEFAULT_ITEM_LIMIT EQU 2
-    SACK_ITEM_LIMIT EQU 4
-    PACK_ITEM_LIMIT EQU 6
+    DEFAULT_ITEM_LIMIT  EQU 2
+    SACK_ITEM_LIMIT     EQU 4
+    PACK_ITEM_LIMIT     EQU 6
 
     ; item ID values
     SACK_ID EQU $5341           ; 'SA'
@@ -47,8 +42,8 @@
     ROOM_MOVE_OFFSET EQU 2      ; offset of move items
 
     ; cmd struct
-    CMD_ENTRY_SIZE EQU 4        ; size of cmd table entry 2 + 2 = 4
-    CMD_FN_OFFSET EQU 2         ; cmd table fn offset
+    CMD_ENTRY_SIZE  EQU 4        ; size of cmd table entry 2 + 2 = 4
+    CMD_FN_OFFSET   EQU 2        ; cmd table fn offset
     
     ; item struct
     ITEM_SIZE           EQU 6   ; size of item table entry

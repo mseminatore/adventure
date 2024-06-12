@@ -259,10 +259,10 @@ CHECK_ITEMS_DONE:
 GET_ROOM_DOOR_PTR:
     PSHS B, Y
 
-    JSR GET_ROOM_PTR    ; get room ptr in X
+    JSR GET_ROOM_PTR            ; get room ptr in X
     
-    LEAY 2, X           ; get NSEW rooms ptr 
-    CLRB                ; clear offset
+    LEAY DOOR_ROOM_OFFSET, X    ; get NSEW rooms ptr 
+    CLRB                        ; clear offset
 
 GET_ROOM01:
     CMPB #6
@@ -279,11 +279,11 @@ GET_ROOM01:
     PULS B, Y, PC
 
 GET_ROOM02:
-    ADDB #2
+    ADDB #2             ; get next room dir
     BRA GET_ROOM01
 
 GET_ROOM_DONE:
-    LDX #0
+    LDX #0              ; nullptr
     PULS B, Y, PC
 
 ;----------------------------
@@ -295,21 +295,31 @@ GET_ROOM_DONE:
 OPEN_CMD:
     PSHS A, X
 
-    JSR GET_ROOM_DOOR_PTR    ; get room door ptr in X
-    CMPX #NULL
-    BEQ OPEN_NO_DOOR
+    JSR GET_ROOM_DOOR_PTR       ; get room door ptr in X
+    CMPX #NULL                  ; is null?
+    BEQ OPEN_NO_DOOR            ; if so then done
 
-    LDX ,X              ; X now has door inst ptr
-    LDA #DOOR_OPEN
-    ORA 2, X            ; turn on door open bit
-    STA 2, X            ; update door
+    LDX ,X                      ; X now has door inst ptr
 
-    LDX #DOOR_OPEN_MSG
+    LDA DINST_PROP_OFFSET, X    ; first check if door is locked
+    BITA #DOOR_LOCKED
+    BEQ OPEN_CMD01
+
+    LDX #DOOR_LOCKED_MSG
+    JSR PUTS
+    BRA OPEN_CMD_DONE
+
+OPEN_CMD01:
+    LDA #DOOR_OPEN              ; get door open bit
+    ORA DINST_PROP_OFFSET, X    ; turn on door open bit
+    STA DINST_PROP_OFFSET, X    ; update door
+
+    LDX #DOOR_OPEN_MSG          ; say we opened it
     JSR PUTS
     BRA OPEN_CMD_DONE
 
 OPEN_NO_DOOR:
-    LDX #NO_DOOR_MSG
+    LDX #NO_DOOR_MSG            ; say no door
     JSR PUTS
 
 OPEN_CMD_DONE:
@@ -325,14 +335,48 @@ CLOSE_CMD:
     CMPX #NULL
     BEQ OPEN_NO_DOOR
 
-    LDX ,X              ; X now has door inst ptr
-    LDA #~DOOR_OPEN
-    ANDA 2, X            ; turn on door open bit
-    STA 2, X            ; update door
+    LDX ,X                      ; X now has door inst ptr
+    LDA #~DOOR_OPEN             ; create door open mask
+    ANDA DINST_PROP_OFFSET, X   ; turn off door open bit
+    STA DINST_PROP_OFFSET, X    ; update door
 
-    LDX #DOOR_CLOSED_MSG
+    LDX #DOOR_CLOSED_MSG        ; say we closed it
     JSR PUTS
   
+    PULS A, X, PC
+
+;----------------------------
+; Unlock room door
+;----------------------------
+UNLOCK_CMD:
+    PSHS A, X
+
+    JSR GET_ROOM_DOOR_PTR    ; get room door ptr in X
+    CMPX #NULL
+    BEQ OPEN_NO_DOOR
+
+    LDX ,X                      ; X now has door inst ptr
+    LDA DINST_PROP_OFFSET, X    ; get door props
+    BITA #DOOR_LOCKABLE         ; is door lockable?
+    BEQ UNLOCK_NOT_LOCKED       ; not lockable
+
+    BITA #DOOR_LOCKED           ; is door locked?
+    BEQ UNLOCK_NOT_LOCKED       ; not locked
+
+    ANDA #~DOOR_LOCKED          ; clear locked bit
+    STA DINST_PROP_OFFSET, X    ; update door props
+
+    LDX #DOOR_UNLOCKED_MSG      ; say we unlocked it
+    JSR PUTS
+    BRA UNLOCK_DONE
+
+UNLOCK_NOT_LOCKED:
+
+    LDX #DOOR_NOT_LOCKED_MSG
+    JSR PUTS
+    BRA UNLOCK_DONE
+
+UNLOCK_DONE:
     PULS A, X, PC
 
 ;----------------------------
@@ -1238,8 +1282,11 @@ INCLUDE "math.inc"
     DOOR_CLOSED_MSG: FCZ "THE DOOR IS CLOSED.\r\r"
     DOOR_OPEN_MSG: FCZ "THE DOOR IS OPEN.\r\r"
     NO_DOOR_MSG: FCZ "THERE IS NO DOOR HERE!\r\r"
-    
-    DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
+    DOOR_NOT_LOCKED_MSG: FCZ "THE DOOR IS NOT LOCKED!\r\r"
+    DOOR_UNLOCKED_MSG: FCZ "THE DOOR IS UNLOCKED.\r\r"
+    DOOR_LOCKED_MSG: FCZ "THE DOOR IS LOCKED.\r\r"
+
+    ; DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
     WIN_MSG: FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
     DIE_MSG: FCZ "YOU FALL TO YOUR DEATH AND MAKE QUITE A MESS!\r\r"
 
@@ -1312,8 +1359,8 @@ INCLUDE "math.inc"
     SKULL_READ: FCZ "YORICK: A FELLOW OF INFINITE JEST.\r\r"
     WINE_READ: FCZ "CHATEAU STE. MICHELLE CHARDONNAY 1980\r\r"
     RING_READ: FCZ "ASH NAZG DURBATULUK, ASH NAZG GIMBATUL...\r\r"
-    ; MELVILE_READ: FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
-    ; DANTE_READ: FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
+    MELVILE_READ: FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
+    DANTE_READ: FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
 
     DEATH_MSG: FCZ "SADLY YOU PERISH. TRY AGAIN?  hit any key\r\r"
 
@@ -1441,6 +1488,8 @@ INCLUDE "math.inc"
     LEAD_BAR: FCZ "LEAD BAR"
     STICK: FCZ "STICK"
     BROOM: FCZ "BROOM"
+    DANTE_SIGN: FCZ "SIGN"
+    MELVILLE_SIGN: FCZ "PAINTING"
 
 ;---------------------------
 ; Item table
@@ -1466,6 +1515,8 @@ ITEMS:
     FDB BUCKET      FCB 33  FDB ACME_READ FCB NORMAL_ITEM
     FDB ROPE        FCB 0   FDB NULL FCB NORMAL_ITEM
     FDB SKULL       FCB 65  FDB SKULL_READ FCB NORMAL_ITEM
+    FDB DANTE_SIGN  FCB 41  FDB DANTE_READ FCB 0
+    FDB MELVILLE_SIGN FCB 33 FDB MELVILE_READ FCB 0  
     ; FDB LEAD_BAR FCB 0
     ; FDB STICK FCB 0
     ; FDB BROOM FCB 0
@@ -1524,6 +1575,7 @@ CMDS:
     FCC "PU" FDB PASS           ; place an object
     FCC "RE" FDB READ_CMD       ; read a message
     FCC "EX" FDB READ_CMD
+    FCC "UN" FDB UNLOCK_CMD     ; unlock room door
     ; FCC "DI" FDB DIE_CMD        ; player dies
 
     ; debug commands
@@ -1642,7 +1694,7 @@ DECORATIONS:
 ; Door instances
 ; States: desc, props
 ;----------------------------------
-DINST1: FDB DOOR_GREEN FCB 0; DOOR_OPEN
+DINST1: FDB DOOR_GREEN FCB DOOR_LOCKABLE | DOOR_LOCKED; DOOR_OPEN
 ; DOOR2: FDB DOOR_PLAIN FCB 0
 ; DOOR3: FDB DOOR_PLAIN FCB 0
 ; DOOR4: FDB DOOR_PLAIN FCB 0
