@@ -43,12 +43,6 @@ GAME_LOOP:
 
     JSR LOOK_CMD            ; describe current room
 
-    JSR CHECK_DECORATIONS   ; print any room decorations
-
-    JSR CHECK_ITEMS         ; print any items
-
-    JSR CHECK_DOORS         ; print any doors
-
 GAME_LOOP01:
     LDA #CR         ; newlines
     JSR PUTC
@@ -106,43 +100,87 @@ CHECK_DECORATIONS_DONE:
 ; Return: none
 ;----------------------------
 CHECK_DOORS:
-    PSHS A, X, Y, U
+    PSHS A, B, X, Y, U
 
-    LDY #DOORS      ; get door table ptr
-    LDA ROOM        ; get current room num
+    JSR GET_ROOM_PTR    ; get room ptr in X
+
+    LEAY 2, X           ; get NSEW rooms ptr
+    CLRB                ; clear offset
 
 CHECK_DOORS01:
-    LDU ,Y                  ; get door obj ptr
-    CMPU #NULL              ; is it NULL?
-    BEQ CHECK_DOORS_DONE    ; if so done
+    CMPB #6
+    BGT CHECK_DOORS_DONE
 
-    CMPA DOOR_ROOM_OFFSET, Y ; is door in room?
-    BNE CHECK_DOORS02       ; if not go to next door
+    LDX B, Y            ; get next room dir
+    CMPX #-1            ; invalid?
+    BEQ CHECK_DOORS03   ; if so, next room dir
 
+    CMPX #255           ; no door?
+    BLS CHECK_DOORS03   ; if so, next room dir
+
+    TFR X, U
     LDX #ONTHE_MSG
     JSR PUTS
 
-    LDA DOOR_WALL_OFFSET, Y ; get wall prop
-    ASLA                
-    LDX #WALL_MSG
-    LDX A, X
+    LDX #WALL_MSG           ; print which wall
+    LDX B, X
     JSR PUTS
 
     LDX #ITEM_MSG1          ; print 'there is a '
     JSR PUTS
 
-    LDX ,U                  ; print door description
+    LDU ,U                  ; get door insta ptr
+    LDX ,U                  ; get door desc ptr
     JSR PUTS
 
+    LDA 2, U                ; get door props
+    BITA #DOOR_OPEN         ; check door state
+    BNE CHECK_DOORS02       ; if closed
+
+    LDX #WHICH_IS_CLOSED
+    JSR PUTS
+
+CHECK_DOORS02:
     LDA #'.'
     JSR PUTC
+
+CHECK_DOORS03:
+    ADDB #2             ; inc offset
+    BRA CHECK_DOORS01   ; keep looking
+
+;     LDY #DOORS      ; get door table ptr
+;     LDA ROOM        ; get current room num
+
+; CHECK_DOORS01:
+;     LDU ,Y                  ; get door obj ptr
+;     CMPU #NULL              ; is it NULL?
+;     BEQ CHECK_DOORS_DONE    ; if so done
+
+;     CMPA DOOR_ROOM_OFFSET, Y ; is door in room?
+;     BNE CHECK_DOORS02       ; if not go to next door
+
+
+;     LDA DOOR_WALL_OFFSET, Y ; get wall prop
+;     ASLA                
+;     LDX #WALL_MSG
+;     LDX A, X
+;     JSR PUTS
+
+;     LDX #ITEM_MSG1          ; print 'there is a '
+;     JSR PUTS
+
+;     LDX ,U                  ; print door description
+;     JSR PUTS
+
+;     LDA #'.'
+;     JSR PUTC
     
-CHECK_DOORS02:
-    LEAY DOOR_SIZE, Y       ; get next door ptr
-    BRA CHECK_DOORS01
+; CHECK_DOORS02:
+;     LEAY DOOR_SIZE, Y       ; get next door ptr
+;     BRA CHECK_DOORS01
 
 CHECK_DOORS_DONE:
-    PULS A, X, Y, U, PC
+    PULS A, B, X, Y, U, PC
 
 ;----------------------------
 ; Execute room rules
@@ -205,6 +243,147 @@ CHECK_ITEMS02:
 
 CHECK_ITEMS_DONE:
     PULS A, X, Y, U, PC
+
+;-------------------------------
+; Get door ptr for room
+;
+; Input: none
+; Return: door ptr in X or NULL
+;-------------------------------
+GET_ROOM_DOOR_PTR:
+    PSHS B, Y
+
+    JSR GET_ROOM_PTR            ; get room ptr in X
+    
+    LEAY DOOR_ROOM_OFFSET, X    ; get NSEW rooms ptr 
+    CLRB                        ; clear offset
+
+GET_ROOM01:
+    CMPB #6
+    BGT GET_ROOM_DONE
+    
+    LDX B, Y            ; get room for dir
+    CMPX #-1            ; invalid?
+    BEQ GET_ROOM02      ; if so get next room dir
+
+    CMPX #255           ; is open passage?
+    BLS GET_ROOM02      ; if so get next room dir
+
+    ; X has door ptr
+    PULS B, Y, PC
+
+GET_ROOM02:
+    ADDB #2             ; get next room dir
+    BRA GET_ROOM01
+
+GET_ROOM_DONE:
+    LDX #0              ; nullptr
+    PULS B, Y, PC
+
+;----------------------------
+; Open room door
+;
+; Input: none
+; Return: none
+;----------------------------
+OPEN_CMD:
+    PSHS A, X
+
+    JSR GET_ROOM_DOOR_PTR       ; get room door ptr in X
+    CMPX #NULL                  ; is null?
+    BEQ OPEN_NO_DOOR            ; if so then done
+
+    LDX ,X                      ; X now has door inst ptr
+
+    LDA DINST_PROP_OFFSET, X    ; first check if door is locked
+    BITA #DOOR_LOCKED
+    BEQ OPEN_CMD01
+
+    LDX #DOOR_LOCKED_MSG
+    JSR PUTS
+    BRA OPEN_CMD_DONE
+
+OPEN_CMD01:
+    LDA #DOOR_OPEN              ; get door open bit
+    ORA DINST_PROP_OFFSET, X    ; turn on door open bit
+    STA DINST_PROP_OFFSET, X    ; update door
+
+    LDX #DOOR_OPEN_MSG          ; say we opened it
+    JSR PUTS
+    BRA OPEN_CMD_DONE
+
+OPEN_NO_DOOR:
+    LDX #NO_DOOR_MSG            ; say no door
+    JSR PUTS
+
+OPEN_CMD_DONE:
+    PULS A, X, PC
+
+;----------------------------
+; Close room door
+;----------------------------
+CLOSE_CMD:
+    PSHS A, X
+
+    JSR GET_ROOM_DOOR_PTR    ; get room door ptr in X
+    CMPX #NULL
+    BEQ OPEN_NO_DOOR
+
+    LDX ,X                      ; X now has door inst ptr
+    LDA #~DOOR_OPEN             ; create door open mask
+    ANDA DINST_PROP_OFFSET, X   ; turn off door open bit
+    STA DINST_PROP_OFFSET, X    ; update door
+
+    LDX #DOOR_CLOSED_MSG        ; say we closed it
+    JSR PUTS
+  
+    PULS A, X, PC
+
+;----------------------------
+; Unlock room door
+;----------------------------
+UNLOCK_CMD:
+    PSHS A, X
+
+    JSR GET_ROOM_DOOR_PTR    ; get room door ptr in X
+    CMPX #NULL
+    BEQ OPEN_NO_DOOR
+
+    LDX ,X                      ; X now has door inst ptr
+    LDA DINST_PROP_OFFSET, X    ; get door props
+    BITA #DOOR_LOCKABLE         ; is door lockable?
+    BEQ UNLOCK_NOT_LOCKED       ; not lockable
+
+    BITA #DOOR_LOCKED           ; is door locked?
+    BEQ UNLOCK_NOT_LOCKED       ; not locked
+
+    ; do we have the key?
+    PSHS X    
+    LDX DINST_ITEM_OFFSET, X    ; get ptr to item
+    LDX ,X                      ; get item id
+    JSR HAVE_ITEM               ; do we have it?
+    PULS X
+    BNE UNLOCK_NO_KEY           ; if not say so
+
+    ANDA #~DOOR_LOCKED          ; clear locked bit
+    STA DINST_PROP_OFFSET, X    ; update door props
+
+    LDX #DOOR_UNLOCKED_MSG      ; say we unlocked it
+    JSR PUTS
+    BRA UNLOCK_DONE
+
+UNLOCK_NO_KEY:
+    LDX #DOOR_NO_KEY_MSG
+    JSR PUTS
+    BRA UNLOCK_DONE
+
+UNLOCK_NOT_LOCKED:
+
+    LDX #DOOR_NOT_LOCKED_MSG
+    JSR PUTS
+
+UNLOCK_DONE:
+    PULS A, X, PC
 
 ;----------------------------
 ; Display pack items
@@ -532,24 +711,22 @@ PASS:
 ; always true predicate
 ;----------------------------
 ALWAYS:
-    ; ORCC #FLAG_Z    ; Z = 1 = true
-    SETZ
+    SETZ        ; Z = 1 = true
     RTS
 
 ;----------------------------
 ; never true predicate
 ;----------------------------
 NEVER:
-    ; ANDCC #~FLAG_Z  ; z = 0 = false
-    CLRZ
+    CLRZ        ; z = 0 = false
     RTS
 
-;----------------------------
+;---------------------------------
 ; true if carrying item
 ;
 ; Input: item in X
 ; Return: z = 1 = true if carrying
-;----------------------------
+;---------------------------------
 HAVE_ITEM:
     PSHS A, Y
     LDY #ITEMS      ; get item table ptr
@@ -561,11 +738,11 @@ HAVE_ITEM01:
     BEQ HAVE_ITEM_FALSE ; if so we are done
 
     LDX [,Y]            ; get first two chars
-    CMPX ,S         ; is item the small sack?
+    CMPX ,S             ; is item the small sack?
     BNE HAVE_ITEM02     ; if not continue
 
     LDA ITEM_LOC_OFFSET, Y  ; get item loc
-    CMPA #CARRYING           ; are we carrying it?
+    CMPA #CARRYING          ; are we carrying it?
     BEQ HAVE_ITEM_TRUE      ; if so return true
 
 HAVE_ITEM02:
@@ -573,16 +750,14 @@ HAVE_ITEM02:
     BRA HAVE_ITEM01     ; continue
 
 HAVE_ITEM_TRUE:
-    ; ORCC #FLAG_Z    ; z = 1 = true
-    SETZ
+    SETZ                ; z = 1 = true
     BRA HAVE_ITEM_DONE
 
 HAVE_ITEM_FALSE:
-    ; ANDCC #~FLAG_Z  ; z = 0 = false
-    CLRZ
+    CLRZ                ; z = 0 = false
 
 HAVE_ITEM_DONE:
-    PULS X          ; restore copy of X
+    PULS X              ; restore copy of X
     PULS A, Y, PC
 
 ;----------------------------
@@ -634,12 +809,12 @@ SET_ITEMS_PACK:
     STA ITEM_LIMIT
     PULS A, PC
 
-;----------------------------
+;-----------------------------
 ; Attempt to execute a command
 ;
 ; Input: ptr to cmd buf in X
 ; Return: none
-;----------------------------
+;-----------------------------
 DO_CMD:
     PSHS X, Y
 
@@ -688,7 +863,7 @@ GET_ROOM_PTR:
 ; Return: none
 ;---------------------------------
 CHECK_TRANSITION:
-    PSHS A, X, Y
+    PSHS A, B, X, Y
 
     LDY #TRANSITIONS        ; get ptr to transitions table
     LDB ROOM                ; get current room
@@ -714,7 +889,7 @@ CHECK_TRANSITION03:
     JSR [,Y]                    ; execution action
 
 CHECK_TRANSITION_DONE:
-    PULS A, X, Y, PC
+    PULS A, B, X, Y, PC
 
 ;---------------------------------------------
 ; Try to move in given dir
@@ -731,22 +906,40 @@ MOVE:
     PULS X                  ; restore X
 
     LEAY ROOM_MOVE_OFFSET,Y ; inc ptr to move tbl
-    LDA B, Y                ; get next room
-    CMPA #-1                ; is invalid?
+    ASLB
+    LDD B, Y                ; get next room
+
+    CMPD #-1                ; is invalid?
     BEQ MOVE_ERR            ; if so show err message
 
+    CMPD #255
+    BLS MOVE_OPEN           ; no door, go ahead and move
+
+    ; D has door ptr
+    TFR D, Y                ; move door ptr to Y
+    LDB 2, Y                ; get connecting room
+    LDY ,Y                  ; get door instance ptr
+    LDA 2, Y                ; get door props
+    BITA #DOOR_OPEN         ; is door open?
+    BNE MOVE_OPEN           ; if so move
+
+    LDX #DOOR_CLOSED_MSG    ; if not print message
+    JSR PUTS
+    BRA MOVE_DONE           ; and return
+
+MOVE_OPEN:
     JSR PUTS                ; print move message
+    TFR B, A
     JSR CHECK_TRANSITION    ; check for any movement transition actions
 
-    STA ROOM            ; otherwise update room
-    SETC                ; set carry
-    PULS A, X, Y, PC
+    STA ROOM                ; otherwise update room
+    BRA MOVE_DONE           ; and return
 
 MOVE_ERR:
-    LDX #NOMOVE         ; print move err msg
+    LDX #NOMOVE             ; print move err msg
     JSR PUTS
 
-    CLRC                ; clear carry
+MOVE_DONE:
     PULS A, X, Y, PC
 
 ;-------------------------
@@ -800,6 +993,11 @@ LOOK_CMD:
     JSR GET_ROOM_PTR    ; get current room ptr
     LDX ,X              ; get room description
     JSR PUTS            ; print it out
+
+    JSR CHECK_DECORATIONS   ; print any room decorations
+    JSR CHECK_ITEMS         ; print any items
+    JSR CHECK_DOORS         ; print any doors
+
     PULS X, PC
 
 ;-------------------------
@@ -1088,8 +1286,15 @@ INCLUDE "math.inc"
     WELCOME_MSG1: FCZ "\r\r\r\r  WELCOME TO mystery mansion!\r\r     INTERACTIVE FICTION BY\r  MARK AND MATTHEW SEMINATORE\r\r      COPYRIGHT (C) 2024\r      ALL RIGHTS RESERVED."
 
     NOMOVE: FCZ "YOU CAN'T GO THAT WAY!\r\r"
+    DOOR_CLOSED_MSG: FCZ "THE DOOR IS CLOSED.\r\r"
+    DOOR_OPEN_MSG: FCZ "THE DOOR IS OPEN.\r\r"
+    NO_DOOR_MSG: FCZ "THERE IS NO DOOR HERE!\r\r"
+    DOOR_NOT_LOCKED_MSG: FCZ "THE DOOR IS NOT LOCKED!\r\r"
+    DOOR_UNLOCKED_MSG: FCZ "THE DOOR IS UNLOCKED.\r\r"
+    DOOR_LOCKED_MSG: FCZ "THE DOOR IS LOCKED.\r\r"
+    DOOR_NO_KEY_MSG: FCZ "YOU NEED A KEY TO UNLOCK THIS DOOR!\r\r"
 
-    DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
+    ; DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
     WIN_MSG: FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
     DIE_MSG: FCZ "YOU FALL TO YOUR DEATH AND MAKE QUITE A MESS!\r\r"
 
@@ -1131,6 +1336,8 @@ INCLUDE "math.inc"
 
     WALL_MSG: FDB NORTH_MSG, SOUTH_MSG, EAST_MSG, WEST_MSG
 
+    WHICH_IS_CLOSED: FCZ " WHICH IS CLOSED"
+
     ITEM_MSG1: FCZ " THERE IS A "
     ITEM_MSG2: FCZ " HERE."
     THEREISNO: FCZ "THERE IS NO SUCH ITEM HERE.\r\r"
@@ -1160,8 +1367,8 @@ INCLUDE "math.inc"
     SKULL_READ: FCZ "YORICK: A FELLOW OF INFINITE JEST.\r\r"
     WINE_READ: FCZ "CHATEAU STE. MICHELLE CHARDONNAY 1980\r\r"
     RING_READ: FCZ "ASH NAZG DURBATULUK, ASH NAZG GIMBATUL...\r\r"
-    ; MELVILE_READ: FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
-    ; DANTE_READ: FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
+    MELVILE_READ: FCZ "TO THE LAST, I WILL GRAPPLE WITH THEE...FROM HELL's HEART, I STAB AT THEE! FOR HATE'S SAKE, I SPIT MY LAST BREATH AT THEE!\r\r"
+    DANTE_READ: FCZ "ABANDON ALL HOPE, YE WHO ENTER.\r\r"
 
     DEATH_MSG: FCZ "SADLY YOU PERISH. TRY AGAIN?  hit any key\r\r"
 
@@ -1289,6 +1496,8 @@ INCLUDE "math.inc"
     LEAD_BAR: FCZ "LEAD BAR"
     STICK: FCZ "STICK"
     BROOM: FCZ "BROOM"
+    DANTE_SIGN: FCZ "SIGN"
+    MELVILLE_SIGN: FCZ "PAINTING"
 
 ;---------------------------
 ; Item table
@@ -1314,6 +1523,8 @@ ITEMS:
     FDB BUCKET      FCB 33  FDB ACME_READ FCB NORMAL_ITEM
     FDB ROPE        FCB 0   FDB NULL FCB NORMAL_ITEM
     FDB SKULL       FCB 65  FDB SKULL_READ FCB NORMAL_ITEM
+    FDB DANTE_SIGN  FCB 41  FDB DANTE_READ FCB 0
+    FDB MELVILLE_SIGN FCB 33 FDB MELVILE_READ FCB 0  
     ; FDB LEAD_BAR FCB 0
     ; FDB STICK FCB 0
     ; FDB BROOM FCB 0
@@ -1357,21 +1568,22 @@ CMDS:
     FCC "EA" FDB EAST
     FCC "WE" FDB WEST
     FCC "QU" FDB RESET          ; quit game
-    FCC "IN" FDB INVENTORY_CMD      ; display inventory
-    FCC "PA" FDB INVENTORY_CMD      ; display inventory
-    FCC "OP" FDB PASS           ; open door
+    FCC "IN" FDB INVENTORY_CMD  ; display inventory
+    FCC "PA" FDB INVENTORY_CMD  ; display inventory
+    FCC "OP" FDB OPEN_CMD       ; open door
     FCC "DR" FDB DROP_CMD       ; drop an object
     FCC "GE" FDB GET_CMD        ; get an objectø
     FCC "TA" FDB GET_CMD        ; take an object
     FCC "MO" FDB MOVES          ; display move count
     FCC "??" FDB PASS           ; help command
-    FCC "CL" FDB PASS           ; close door
+    FCC "CL" FDB CLOSE_CMD      ; close door
     FCC "HE" FDB HEALTH_CMD     ; display health
     FCC "SC" FDB SCORE_CMD      ; display score
     FCC "US" FDB PASS           ; use an object
     FCC "PU" FDB PASS           ; place an object
     FCC "RE" FDB READ_CMD       ; read a message
     FCC "EX" FDB READ_CMD
+    FCC "UN" FDB UNLOCK_CMD     ; unlock room door
     ; FCC "DI" FDB DIE_CMD        ; player dies
 
     ; debug commands
@@ -1487,44 +1699,51 @@ DECORATIONS:
     FDB NULL    ; end of table
 
 ;----------------------------------
-; Door definitions 
+; Door instances
 ; States: desc, props
 ;----------------------------------
-DOOR1: FDB DOOR_GREEN FCB 0
-DOOR2: FDB DOOR_PLAIN FCB 0
-DOOR3: FDB DOOR_PLAIN FCB 0
-DOOR4: FDB DOOR_PLAIN FCB 0
-DOOR5: FDB DOOR_PLAIN FCB 0
-DOOR6: FDB DOOR_PLAIN FCB 0
-DOOR7: FDB DOOR_PLAIN FCB 0
-DOOR8: FDB DOOR_PLAIN FCB 0
-DOOR9: FDB DOOR_DOUBLE FCB 0
+DINST1: FDB DOOR_PLAIN FCB 0 FDB 0
+DINST2: FDB DOOR_GREEN FCB DOOR_LOCKABLE | DOOR_LOCKED FDB GREEN_KEY
+DINST3: FDB DOOR_PLAIN FCB 0 FDB 0
+DINST4: FDB DOOR_PLAIN FCB 0 FDB 0
+; DOOR2: FDB DOOR_PLAIN FCB 0
+; DOOR3: FDB DOOR_PLAIN FCB 0
+; DOOR4: FDB DOOR_PLAIN FCB 0
+; DOOR5: FDB DOOR_PLAIN FCB 0
+; DOOR6: FDB DOOR_PLAIN FCB 0
+; DOOR7: FDB DOOR_PLAIN FCB 0
+; DOOR8: FDB DOOR_PLAIN FCB 0
+; DOOR9: FDB DOOR_DOUBLE FCB 0
 
 ;-----------------------------------
 ; Room Doors
-; Props: ptr to door obj, room, wall
+; Props: ptr to door inst, room
 ;-----------------------------------
-DOORS:
-    FDB DOOR1 FCB 0 FCB EAST_WALL
-    FDB DOOR1 FCB 1 FCB WEST_WALL
-    FDB DOOR2 FCB 4 FCB EAST_WALL
-    FDB DOOR2 FCB 6 FCB WEST_WALL
-    FDB DOOR3 FCB 20 FCB NORTH_WALL
-    FDB DOOR3 FCB 21 FCB SOUTH_WALL
-    FDB DOOR4 FCB 24 FCB NORTH_WALL
-    FDB DOOR4 FCB 23 FCB SOUTH_WALL
-    FDB DOOR5 FCB 80 FCB NORTH_WALL
-    FDB DOOR5 FCB 81 FCB SOUTH_WALL
-    FDB DOOR6 FCB 87 FCB EAST_WALL
-    FDB DOOR6 FCB 88 FCB WEST_WALL
-    FDB DOOR7 FCB 85 FCB EAST_WALL
-    FDB DOOR7 FCB 86 FCB WEST_WALL
-    FDB DOOR8 FCB 91 FCB EAST_WALL
-    FDB DOOR8 FCB 92 FCB WEST_WALL
-    FDB DOOR9 FCB 93 FCB NORTH_WALL
-    FDB DOOR9 FCB 94 FCB SOUTH_WALL
-
-    FDB NULL
+DOOR1:  FDB DINST1 FCB 1
+DOOR2:  FDB DINST1 FCB 0
+DOOR3:  FDB DINST2 FCB 6
+DOOR4:  FDB DINST2 FCB 4
+DOOR5:  FDB DINST3 FCB 21
+DOOR6:  FDB DINST3 FCB 20
+DOOR7:  FDB DINST4 FCB 24
+DOOR8:  FDB DINST4 FCB 23
+    ; FDB DOOR1 FCB 1 FCB WEST_WALL
+    ; FDB DOOR2 FCB 4 FCB EAST_WALL
+    ; FDB DOOR2 FCB 6 FCB WEST_WALL
+    ; FDB DOOR3 FCB 20 FCB NORTH_WALL
+    ; FDB DOOR3 FCB 21 FCB SOUTH_WALL
+    ; FDB DOOR4 FCB 24 FCB NORTH_WALL
+    ; FDB DOOR4 FCB 23 FCB SOUTH_WALL
+    ; FDB DOOR5 FCB 80 FCB NORTH_WALL
+    ; FDB DOOR5 FCB 81 FCB SOUTH_WALL
+    ; FDB DOOR6 FCB 87 FCB EAST_WALL
+    ; FDB DOOR6 FCB 88 FCB WEST_WALL
+    ; FDB DOOR7 FCB 85 FCB EAST_WALL
+    ; FDB DOOR7 FCB 86 FCB WEST_WALL
+    ; FDB DOOR8 FCB 91 FCB EAST_WALL
+    ; FDB DOOR8 FCB 92 FCB WEST_WALL
+    ; FDB DOOR9 FCB 93 FCB NORTH_WALL
+    ; FDB DOOR9 FCB 94 FCB SOUTH_WALL
 
 ;---------------------------
 ; Room table
@@ -1533,399 +1752,399 @@ DOORS:
 ROOMS:
     ; room 0
     FDB RD0
-    FCB -1, -1, 1, -1   ; , $80 | $04
+    FDB -1, -1, DOOR1, -1
 
     ; room 1
     FDB HALL
-    FCB 2, 3, -1, 0
+    FDB 2, 3, -1, DOOR2
 
     ; room 2
     FDB HALL
-    FCB 4, 1, -1, -1
+    FDB 4, 1, -1, -1
 
     ; room 3
     FDB HALL
-    FCB 1, 5, -1, -1
+    FDB 1, 5, -1, -1
 
     ; room 4
     FDB HALL
-    FCB 7, 2, 6, -1
+    FDB 7, 2, DOOR3, -1
 
     ; room 5
     FDB HALL
-    FCB 3, 14, -1, -1
+    FDB 3, 14, -1, -1
 
     ; room 6
     FDB RD6
-    FCB -1, -1, -1, 4
+    FDB -1, -1, -1, DOOR4
 
     ; room 7
     FDB HALL
-    FCB 8, 4, -1, -1
+    FDB 8, 4, -1, -1
 
     ; room 8
     FDB RD8
-    FCB -1, 7, 9, 16
+    FDB -1, 7, 9, 16
 
     ; room 9
     FDB HALL
-    FCB -1, -1, 10, 8
+    FDB -1, -1, 10, 8
 
     ; room 10
     FDB HALL
-    FCB -1, 11, -1, 9
+    FDB -1, 11, -1, 9
 
     ; room 11
     FDB HALL
-    FCB 10, 12, -1, -1
+    FDB 10, 12, -1, -1
 
     ; room 12
     FDB HALL
-    FCB 11, 13, -1, -1
+    FDB 11, 13, -1, -1
 
     ; room 13
     FDB RD13
-    FCB 12, -1, 17, -1
+    FDB 12, -1, 17, -1
 
     ; room 14
     FDB RD14
-    FCB -1, 15, -1, -1
+    FDB -1, 15, -1, -1
 
     ; room 15
     FDB CELLAR
-    FCB 14, -1, -1, 30
+    FDB 14, -1, -1, 30
 
     ; room 16
     FDB STAIRS
-    FCB -1, -1, 8, 25
+    FDB -1, -1, 8, 25
 
     ; room 17
     FDB HALL
-    FCB -1, -1, 18, 13
+    FDB -1, -1, 18, 13
 
     ; room 18
     FDB HALL
-    FCB 19, 22, -1, 17
+    FDB 19, 22, -1, 17
 
     ; room 19
     FDB HALL
-    FCB 20, 18, -1, -1
+    FDB 20, 18, -1, -1
 
     ; room 20
     FDB HALL
-    FCB 21, 19, -1, -1
+    FDB DOOR5, 19, -1, -1
 
     ; room 21
     FDB RD21
-    FCB -1, 20, -1, -1
+    FDB -1, DOOR6, -1, -1
 
     ; room 22
     FDB HALL
-    FCB 18, 23, -1, -1
+    FDB 18, 23, -1, -1
 
     ; room 23
     FDB HALL
-    FCB 22, 24, -1, -1
+    FDB 22, DOOR7, -1, -1
 
     ; room 24
     FDB RD21
-    FCB 23, -1, -1, -1
+    FDB DOOR8, -1, -1, -1
 
     ; room 25
     FDB LANDING
-    FCB 26, -1, 16, -1
+    FDB 26, -1, 16, -1
 
     ; room 26
     FDB STAIRS
-    FCB 27, 25, -1, -1
+    FDB 27, 25, -1, -1
 
     ; room 27
     FDB STAIRS
-    FCB 28, 26, -1, -1
+    FDB 28, 26, -1, -1
 
     ; room 28
     FDB STAIRS
-    FCB 29, 27, -1, -1
+    FDB 29, 27, -1, -1
 
     ; room 29
     FDB RD29
-    FCB -1, 28, 64, 71
+    FDB -1, 28, 64, 71
 
     ; room 30
     FDB CELLAR
-    FCB -1, -1, 15, 31
+    FDB -1, -1, 15, 31
 
     ; room 31
     FDB CELLAR
-    FCB 32, 51, 30, 35
+    FDB 32, 51, 30, 35
 
     ; room 32
     FDB CELLAR
-    FCB 33, 31, -1, -1
+    FDB 33, 31, -1, -1
 
     ; room 33
     FDB CELLAR
-    FCB -1, 32, -1, 34
+    FDB -1, 32, -1, 34
 
     ; room 34
     FDB CELLAR
-    FCB -1, -1, 33, -1
+    FDB -1, -1, 33, -1
 
     ; room 35
     FDB CELLAR
-    FCB -1, -1, 31, 36
+    FDB -1, -1, 31, 36
 
     ; room 36
     FDB CELLAR
-    FCB -1, 47, 35, 37
+    FDB -1, 47, 35, 37
     
     ; room 37
     FDB CELLAR
-    FCB -1, -1, 36, 38
+    FDB -1, -1, 36, 38
 
     ; room 38
     FDB CELLAR
-    FCB 39, 44, 37, 42
+    FDB 39, 44, 37, 42
 
     ; room 39
     FDB CELLAR
-    FCB 40, 38, -1, -1
+    FDB 40, 38, -1, -1
 
     ; room 40
     FDB CELLAR
-    FCB -1, 39, 41, -1
+    FDB -1, 39, 41, -1
 
     ; room 41
     FDB CELLAR
-    FCB -1, -1, -1, 40
+    FDB -1, -1, -1, 40
 
     ; room 42
     FDB CELLAR
-    FCB -1, -1, 38, 43
+    FDB -1, -1, 38, 43
 
     ; room 43
     FDB RD43
-    FCB -1, -1, 42, 76
+    FDB -1, -1, 42, 76
 
     ; room 44
     FDB CELLAR
-    FCB 38, 45, -1, -1
+    FDB 38, 45, -1, -1
 
     ; room 45
     FDB CELLAR
-    FCB 44, 46, -1, -1
+    FDB 44, 46, -1, -1
 
     ; room 46
     FDB RD46
-    FCB 45, -1, -1, -1
+    FDB 45, -1, -1, -1
 
     ; room 47
     FDB CELLAR
-    FCB 36, 48, -1, -1
+    FDB 36, 48, -1, -1
 
     ; room 48
     FDB CELLAR
-    FCB 47, -1, 49, -1
+    FDB 47, -1, 49, -1
 
     ; room 49
     FDB CELLAR
-    FCB -1, -1, 50, 48
+    FDB -1, -1, 50, 48
 
     ; room 50
     FDB CELLAR
-    FCB 51, 52, 57, 49
+    FDB 51, 52, 57, 49
 
     ; room 51
     FDB CELLAR
-    FCB 31, 50, -1, -1
+    FDB 31, 50, -1, -1
 
     ; room 52
     FDB CELLAR
-    FCB 50, 53, -1, -1
+    FDB 50, 53, -1, -1
 
     ; room 53
     FDB CELLAR
-    FCB 52, -1, -1, 54
+    FDB 52, -1, -1, 54
 
     ; room 54
     FDB CELLAR
-    FCB -1, 55, 53, -1
+    FDB -1, 55, 53, -1
 
     ; room 55
     FDB CELLAR
-    FCB 54, 56, -1, -1
+    FDB 54, 56, -1, -1
 
     ; room 56
     FDB RD56
-    FCB 55, -1, -1, -1
+    FDB 55, -1, -1, -1
 
     ; room 57
     FDB CELLAR
-    FCB -1, -1, 58, 50
+    FDB -1, -1, 58, 50
 
     ; room 58
     FDB CELLAR
-    FCB -1, 59, -1, 57
+    FDB -1, 59, -1, 57
 
     ; room 59
     FDB CELLAR
-    FCB 58, 60, -1, -1
+    FDB 58, 60, -1, -1
 
     ; room 60
     FDB CELLAR
-    FCB 59, -1, 61, -1
+    FDB 59, -1, 61, -1
 
     ; room 61
     FDB CELLAR
-    FCB -1, 62, -1, 60
+    FDB -1, 62, -1, 60
 
     ; room 62
     FDB CELLAR
-    FCB 61, 63, -1, -1
+    FDB 61, 63, -1, -1
 
     ; room 63
     FDB RD63
-    FCB 62, -1, -1, -1
+    FDB 62, -1, -1, -1
 
     ; room 64
     FDB HALL
-    FCB -1, -1, 65, 29
+    FDB -1, -1, 65, 29
 
     ; room 65
     FDB RD65
-    FCB -1, -1, 66, 64
+    FDB -1, -1, 66, 64
 
     ; room 66
     FDB HALL
-    FCB -1, -1, 67, 65
+    FDB -1, -1, 67, 65
 
     ; room 67
     FDB HALL
-    FCB 68,-1,-1,66
+    FDB 68,-1,-1,66
 
     ; room 68
     FDB HALL
-    FCB 69,67,-1,-1
+    FDB 69,67,-1,-1
 
     ; room 69
     FDB HALL
-    FCB 70,68,-1,-1
+    FDB 70,68,-1,-1
 
     ; room 70
     FDB RD70
-    FCB -1,69,-1,-1
+    FDB -1,69,-1,-1
 
     ; room 71
     FDB HALL
-    FCB -1,-1,29,72
+    FDB -1,-1,29,72
 
     ; room 72
     FDB HALL
-    FCB 73,-1, 71,-1
+    FDB 73,-1, 71,-1
 
     ; room 73
     FDB HALL
-    FCB 74, 72, -1, -1
+    FDB 74, 72, -1, -1
 
     ; room 74
     FDB RD74
-    FCB 75, 73, -1,-1
+    FDB 75, 73, -1,-1
 
     ; room 75
     FDB RD75
-    FCB 98, 74, -1,-1
+    FDB 98, 74, -1,-1
 
     ; room 76
     FDB RD76
-    FCB -1, -1, 77, -1
+    FDB -1, -1, 77, -1
 
     ; room 77
     FDB RD77
-    FCB -1, -1, 78, -1
+    FDB -1, -1, 78, -1
 
     ; room 78
     FDB HALL
-    FCB -1, -1, 79, 77
+    FDB -1, -1, 79, 77
 
     ; room 79
     FDB RD79
-    FCB 80, -1, -1, 78
+    FDB 80, -1, -1, 78
 
     ; room 80
     FDB RD80
-    FCB 81, 79, 82, -1
+    FDB 81, 79, 82, -1
 
     ; room 81
     FDB RD81
-    FCB -1, 80, -1, -1
+    FDB -1, 80, -1, -1
 
     ; room 82
     FDB HALL
-    FCB 89, 83, -1, -1
+    FDB 89, 83, -1, -1
 
     ; room 83
     FDB RD83
-    FCB 82, -1, 84, -1
+    FDB 82, -1, 84, -1
 
     ; room 84
     FDB RD84
-    FCB -1, 85, -1, 83
+    FDB -1, 85, -1, 83
 
     ; room 85
     FDB HALL
-    FCB 84, 87, 86, -1
+    FDB 84, 87, 86, -1
 
     ; room 86
     FDB RD86
-    FCB -1, -1, -1, 85
+    FDB -1, -1, -1, 85
 
     ; room 87
     FDB HALL
-    FCB 85, -1, 88, -1
+    FDB 85, -1, 88, -1
 
     ; room 88
     FDB RD88
-    FCB -1, -1, -1, 87
+    FDB -1, -1, -1, 87
 
     ; room 89
     FDB RD83
-    FCB -1, 82, 90, -1
+    FDB -1, 82, 90, -1
 
     ; room 90
     FDB RD84
-    FCB 91, -1, -1, 89
+    FDB 91, -1, -1, 89
 
     ; room 91
     FDB HALL
-    FCB 93, 90, 92, -1
+    FDB 93, 90, 92, -1
 
     ; room 92
     FDB RD86
-    FCB -1, -1, -1, 91
+    FDB -1, -1, -1, 91
 
     ; room 93
     FDB HALL
-    FCB 94, 91, -1, -1
+    FDB 94, 91, -1, -1
 
     ; room 94
     FDB RD94
-    FCB -1, 93, -1, 95
+    FDB -1, 93, -1, 95
 
     ; room 95
     FDB RD95
-    FCB 96, -1, 94, -1
+    FDB 96, -1, 94, -1
 
     ; room 96
     FDB RD96
-    FCB 97, 95, -1, -1
+    FDB 97, 95, -1, -1
 
     ; room 97
     FDB RD97
-    FCB -1, 8, -1, -1
+    FDB -1, 8, -1, -1
 
     ; room 98
     FDB EXIT_ROOM
-    FCB -1, -1, -1, -1
+    FDB -1, -1, -1, -1
 
 ;---------------------------------
 ; transition table
