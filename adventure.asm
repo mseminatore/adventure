@@ -43,12 +43,6 @@ GAME_LOOP:
 
     JSR LOOK_CMD            ; describe current room
 
-    JSR CHECK_DECORATIONS   ; print any room decorations
-
-    JSR CHECK_ITEMS         ; print any items
-
-    JSR CHECK_DOORS         ; print any doors
-
 GAME_LOOP01:
     LDA #CR         ; newlines
     JSR PUTC
@@ -717,24 +711,22 @@ PASS:
 ; always true predicate
 ;----------------------------
 ALWAYS:
-    ; ORCC #FLAG_Z    ; Z = 1 = true
-    SETZ
+    SETZ        ; Z = 1 = true
     RTS
 
 ;----------------------------
 ; never true predicate
 ;----------------------------
 NEVER:
-    ; ANDCC #~FLAG_Z  ; z = 0 = false
-    CLRZ
+    CLRZ        ; z = 0 = false
     RTS
 
-;----------------------------
+;---------------------------------
 ; true if carrying item
 ;
 ; Input: item in X
 ; Return: z = 1 = true if carrying
-;----------------------------
+;---------------------------------
 HAVE_ITEM:
     PSHS A, Y
     LDY #ITEMS      ; get item table ptr
@@ -746,11 +738,11 @@ HAVE_ITEM01:
     BEQ HAVE_ITEM_FALSE ; if so we are done
 
     LDX [,Y]            ; get first two chars
-    CMPX ,S         ; is item the small sack?
+    CMPX ,S             ; is item the small sack?
     BNE HAVE_ITEM02     ; if not continue
 
     LDA ITEM_LOC_OFFSET, Y  ; get item loc
-    CMPA #CARRYING           ; are we carrying it?
+    CMPA #CARRYING          ; are we carrying it?
     BEQ HAVE_ITEM_TRUE      ; if so return true
 
 HAVE_ITEM02:
@@ -758,16 +750,14 @@ HAVE_ITEM02:
     BRA HAVE_ITEM01     ; continue
 
 HAVE_ITEM_TRUE:
-    ; ORCC #FLAG_Z    ; z = 1 = true
-    SETZ
+    SETZ                ; z = 1 = true
     BRA HAVE_ITEM_DONE
 
 HAVE_ITEM_FALSE:
-    ; ANDCC #~FLAG_Z  ; z = 0 = false
-    CLRZ
+    CLRZ                ; z = 0 = false
 
 HAVE_ITEM_DONE:
-    PULS X          ; restore copy of X
+    PULS X              ; restore copy of X
     PULS A, Y, PC
 
 ;----------------------------
@@ -819,12 +809,12 @@ SET_ITEMS_PACK:
     STA ITEM_LIMIT
     PULS A, PC
 
-;----------------------------
+;-----------------------------
 ; Attempt to execute a command
 ;
 ; Input: ptr to cmd buf in X
 ; Return: none
-;----------------------------
+;-----------------------------
 DO_CMD:
     PSHS X, Y
 
@@ -1003,6 +993,11 @@ LOOK_CMD:
     JSR GET_ROOM_PTR    ; get current room ptr
     LDX ,X              ; get room description
     JSR PUTS            ; print it out
+
+    JSR CHECK_DECORATIONS   ; print any room decorations
+    JSR CHECK_ITEMS         ; print any items
+    JSR CHECK_DOORS         ; print any doors
+
     PULS X, PC
 
 ;-------------------------
