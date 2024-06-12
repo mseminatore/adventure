@@ -363,6 +363,14 @@ UNLOCK_CMD:
     BITA #DOOR_LOCKED           ; is door locked?
     BEQ UNLOCK_NOT_LOCKED       ; not locked
 
+    ; do we have the key?
+    PSHS X    
+    LDX DINST_ITEM_OFFSET, X    ; get ptr to item
+    LDX ,X                      ; get item id
+    JSR HAVE_ITEM               ; do we have it?
+    PULS X
+    BNE UNLOCK_NO_KEY           ; if not say so
+
     ANDA #~DOOR_LOCKED          ; clear locked bit
     STA DINST_PROP_OFFSET, X    ; update door props
 
@@ -370,11 +378,15 @@ UNLOCK_CMD:
     JSR PUTS
     BRA UNLOCK_DONE
 
+UNLOCK_NO_KEY:
+    LDX #DOOR_NO_KEY_MSG
+    JSR PUTS
+    BRA UNLOCK_DONE
+
 UNLOCK_NOT_LOCKED:
 
     LDX #DOOR_NOT_LOCKED_MSG
     JSR PUTS
-    BRA UNLOCK_DONE
 
 UNLOCK_DONE:
     PULS A, X, PC
@@ -1285,6 +1297,7 @@ INCLUDE "math.inc"
     DOOR_NOT_LOCKED_MSG: FCZ "THE DOOR IS NOT LOCKED!\r\r"
     DOOR_UNLOCKED_MSG: FCZ "THE DOOR IS UNLOCKED.\r\r"
     DOOR_LOCKED_MSG: FCZ "THE DOOR IS LOCKED.\r\r"
+    DOOR_NO_KEY_MSG: FCZ "YOU NEED A KEY TO UNLOCK THIS DOOR!\r\r"
 
     ; DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
     WIN_MSG: FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
@@ -1694,7 +1707,10 @@ DECORATIONS:
 ; Door instances
 ; States: desc, props
 ;----------------------------------
-DINST1: FDB DOOR_GREEN FCB DOOR_LOCKABLE | DOOR_LOCKED; DOOR_OPEN
+DINST1: FDB DOOR_PLAIN FCB 0 FDB 0
+DINST2: FDB DOOR_GREEN FCB DOOR_LOCKABLE | DOOR_LOCKED FDB GREEN_KEY
+DINST3: FDB DOOR_PLAIN FCB 0 FDB 0
+DINST4: FDB DOOR_PLAIN FCB 0 FDB 0
 ; DOOR2: FDB DOOR_PLAIN FCB 0
 ; DOOR3: FDB DOOR_PLAIN FCB 0
 ; DOOR4: FDB DOOR_PLAIN FCB 0
@@ -1710,7 +1726,12 @@ DINST1: FDB DOOR_GREEN FCB DOOR_LOCKABLE | DOOR_LOCKED; DOOR_OPEN
 ;-----------------------------------
 DOOR1:  FDB DINST1 FCB 1
 DOOR2:  FDB DINST1 FCB 0
-
+DOOR3:  FDB DINST2 FCB 6
+DOOR4:  FDB DINST2 FCB 4
+DOOR5:  FDB DINST3 FCB 21
+DOOR6:  FDB DINST3 FCB 20
+DOOR7:  FDB DINST4 FCB 24
+DOOR8:  FDB DINST4 FCB 23
     ; FDB DOOR1 FCB 1 FCB WEST_WALL
     ; FDB DOOR2 FCB 4 FCB EAST_WALL
     ; FDB DOOR2 FCB 6 FCB WEST_WALL
@@ -1752,7 +1773,7 @@ ROOMS:
 
     ; room 4
     FDB HALL
-    FDB 7, 2, 6, -1
+    FDB 7, 2, DOOR3, -1
 
     ; room 5
     FDB HALL
@@ -1760,7 +1781,7 @@ ROOMS:
 
     ; room 6
     FDB RD6
-    FDB -1, -1, -1, 4
+    FDB -1, -1, -1, DOOR4
 
     ; room 7
     FDB HALL
@@ -1816,11 +1837,11 @@ ROOMS:
 
     ; room 20
     FDB HALL
-    FDB 21, 19, -1, -1
+    FDB DOOR5, 19, -1, -1
 
     ; room 21
     FDB RD21
-    FDB -1, 20, -1, -1
+    FDB -1, DOOR6, -1, -1
 
     ; room 22
     FDB HALL
@@ -1828,11 +1849,11 @@ ROOMS:
 
     ; room 23
     FDB HALL
-    FDB 22, 24, -1, -1
+    FDB 22, DOOR7, -1, -1
 
     ; room 24
     FDB RD21
-    FDB 23, -1, -1, -1
+    FDB DOOR8, -1, -1, -1
 
     ; room 25
     FDB LANDING

@@ -18,8 +18,9 @@
     DOOR_PTR_OFFSET EQU 0
     DOOR_ROOM_OFFSET EQU 2
 
-    DINST_DESC_OFFSET EQU 0
-    DINST_PROP_OFFSET EQU 2
+    DINST_DESC_OFFSET EQU 0     ; offset to door desc ptr
+    DINST_PROP_OFFSET EQU 2     ; offset to door props
+    DINST_ITEM_OFFSET EQU 3     ; offset to door key item ptr
 
     ; room definitions
     ROOM_START  EQU 0
