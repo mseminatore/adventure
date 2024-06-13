@@ -42,10 +42,6 @@ GAME_LOOP:
     JSR CHECK_RULES         ; check for rules
 
     JSR LOOK_CMD            ; describe current room
-    JSR CHECK_DECORATIONS   ; print any room decorations
-    JSR CHECK_ITEMS         ; print any items
-    JSR CHECK_DOORS         ; print any doors
-
 
 GAME_LOOP01:
     LDA #CR         ; newlines
@@ -997,6 +993,10 @@ LOOK_CMD:
     JSR GET_ROOM_PTR    ; get current room ptr
     LDX ,X              ; get room description
     JSR PUTS            ; print it out
+
+    JSR CHECK_DECORATIONS   ; print any room decorations
+    JSR CHECK_ITEMS         ; print any items
+    JSR CHECK_DOORS         ; print any doors
 
     PULS X, PC
 
