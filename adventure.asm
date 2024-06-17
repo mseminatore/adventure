@@ -458,12 +458,12 @@ INC_MOVES:
 
     PULS D, PC
 
-;----------------------------
+;------------------------------------
 ; Skip leading spaces in X
 ;
 ; Input: ptr to string in X
 ; Return: ptr to first non-space in X
-;----------------------------
+;------------------------------------
 SKIP_SPACES:
     PSHS A
 
@@ -824,13 +824,14 @@ SET_ITEMS_PACK:
 ; Return: none
 ;-----------------------------
 DO_CMD:
-    PSHS X, Y
+    PSHS X, Y, U
 
-    LDX ,X         ; get cmd chars
+    JSR SKIP_SPACES ; skip any leading spaces
+    LDU ,X          ; get cmd chars
     LDY #CMDS       ; Y points to cmd table
 
 CMD_LOOP:
-    CMPX ,Y         ; see if we found a match
+    CMPU ,Y         ; see if we found a match
     BEQ EXECCMD     ; yes, do command
 
     LEAY CMD_ENTRY_SIZE, Y       ; point to next command in table
@@ -839,14 +840,13 @@ CMD_LOOP:
 
     LDX #UNKCMD     ; show err message
     JSR PUTS
-
     BRA CMD_DONE    ; done with commands
 
 EXECCMD:
     JSR [CMD_FN_OFFSET, Y]      ; point to cmd function and call it!
 
 CMD_DONE:
-    PULS X, Y, PC
+    PULS X, Y, U, PC
 
 ;-------------------------
 ; Get ptr to current room
@@ -990,6 +990,23 @@ WEST:
     JSR MOVE
     PULS B, X, PC
 
+;---------------------------
+; try to GO or MOVE in a dir
+;
+; Input: ptr to input in X
+; Return: none
+;---------------------------
+MOVE_CMD:
+    PSHS A, X
+
+    ; skip over MOVE or GO word
+    LDA #SPACE      ; space delimiter
+    JSR STRCHR      ; look for space
+    JSR SKIP_SPACES ; skip any additional spaces
+    JSR DO_CMD      ; recurse into cmd processor
+
+    PULS A, X, PC
+
 ;-------------------------
 ; Look command
 ;
@@ -1034,7 +1051,7 @@ DBG_RP:
 ;-------------------------
 ; display move count
 ;-------------------------
-MOVES:
+STEPS_CMD:
     PSHS A, X
 
     LDX #MOVE_MSG
@@ -1148,7 +1165,7 @@ DW_EXIT_ACTION:
     PULS X, PC
 
 ;---------------------------------
-; Elevator enter action
+; Enter elevator action
 ;---------------------------------
 EL_ENTER_ACTION:
     PSHS X
@@ -1157,7 +1174,7 @@ EL_ENTER_ACTION:
     PULS X, PC
 
 ;---------------------------------
-; Elevator exit action
+; Exit elevator action
 ;---------------------------------
 EL_EXIT_ACTION:
     PSHS X
@@ -1166,7 +1183,7 @@ EL_EXIT_ACTION:
     PULS X, PC
 
 ;---------------------------------
-;
+; Balcony exit action
 ;---------------------------------
 BALCONY_ACTION:
     PSHS X
@@ -1314,7 +1331,7 @@ INCLUDE "math.inc"
     ROOM_MSG: FCZ "ROOM "
     MOVE_MSG: FCZ "MOVES "
 
-    START_MSG: FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. FIND YOUR WAY OUT.\r\rtype LOOK to examine room\r"
+    START_MSG: FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. FIND YOUR WAY OUT!\r\rtype LOOK to examine room\r"
 
     NOITEMS: FCZ "NOTHING!\r\r"
 
@@ -1583,6 +1600,8 @@ JMP_TABLE:
 ;---------------------------
 CMDS:
     FCC "LO" FDB PASS           ; look around
+    FCC "MO" FDB MOVE_CMD       ; move or go in a direction
+    FCC "GO" FDB MOVE_CMD
     FCC "NO" FDB NORTH          ; move dirs
     FCC "SO" FDB SOUTH          
     FCC "EA" FDB EAST
@@ -1594,7 +1613,7 @@ CMDS:
     FCC "DR" FDB DROP_CMD       ; drop an object
     FCC "GE" FDB GET_CMD        ; get an objectø
     FCC "TA" FDB GET_CMD        ; take an object
-    FCC "MO" FDB MOVES          ; display move count
+    FCC "ST" FDB STEPS_CMD      ; display move count
     FCC "??" FDB PASS           ; help command
     FCC "CL" FDB CLOSE_CMD      ; close door
     FCC "HE" FDB HEALTH_CMD     ; display health
