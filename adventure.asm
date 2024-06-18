@@ -7,41 +7,37 @@
     INCLUDE "stddefs.inc"
     INCLUDE "gamedefs.inc"
 
-    SETDP $0        ; leave direct page at 0
-    ORG $3F00       ; set our load origin
+    SETDP $0            ; leave direct page at 0
+    ORG $3F00           ; set our load origin
     
 START:
-    LDS #RAMEND     ; setup stack
+    LDS #RAMEND         ; setup stack
 
     LDB #0
-    TFR B, DP       ; make sure DP is set to 0
+    TFR B, DP           ; make sure DP is set to 0
 
 RESTART:
-    JSR INIT        ; init game state
+    JSR INIT            ; init game state
 
-    JSR CLS         ; clear screen
+    JSR CLS             ; clear screen
     
-    LDX #WELCOME_MSG1
+    LDX #WELCOME_MSG1   ; display welcome message
     JSR PUTS
-    JSR WAIT
-    JSR CLS
+    JSR WAIT            ; wait for keypress
+    JSR CLS             ; clear the screen
 
-    ; LDX #INSTRUCTIONS
-    ; JSR PUTS
-    ; JSR WAIT
-    ; JSR CLS
+    JSR INST_CMD        ; display instructions
 
-    LDX #START_MSG  ; show start-up message
+    LDX #START_MSG      ; show start-up message
     JSR PUTS
 
-    ; TODO - maybe remove this as confusing?
-    JSR CHECK_RULES         ; check for rules
-    BRA GAME_LOOP01 ; skip the initial room description?
+    JSR CHECK_RULES     ; check for rules
+    BRA GAME_LOOP01     ; skip the initial room description?
 
 GAME_LOOP:
-    JSR CHECK_RULES         ; check for rules
+    JSR CHECK_RULES     ; check for rules
 
-    JSR LOOK_CMD            ; describe current room
+    JSR LOOK_CMD        ; describe current room
 
 GAME_LOOP01:
     LDA #CR         ; newlines
@@ -148,37 +144,6 @@ CHECK_DOORS03:
     ADDB #2             ; inc offset
     BRA CHECK_DOORS01   ; keep looking
 
-;     LDY #DOORS      ; get door table ptr
-;     LDA ROOM        ; get current room num
-
-; CHECK_DOORS01:
-;     LDU ,Y                  ; get door obj ptr
-;     CMPU #NULL              ; is it NULL?
-;     BEQ CHECK_DOORS_DONE    ; if so done
-
-;     CMPA DOOR_ROOM_OFFSET, Y ; is door in room?
-;     BNE CHECK_DOORS02       ; if not go to next door
-
-
-;     LDA DOOR_WALL_OFFSET, Y ; get wall prop
-;     ASLA                
-;     LDX #WALL_MSG
-;     LDX A, X
-;     JSR PUTS
-
-;     LDX #ITEM_MSG1          ; print 'there is a '
-;     JSR PUTS
-
-;     LDX ,U                  ; print door description
-;     JSR PUTS
-
-;     LDA #'.'
-;     JSR PUTC
-    
-; CHECK_DOORS02:
-;     LEAY DOOR_SIZE, Y       ; get next door ptr
-;     BRA CHECK_DOORS01
-
 CHECK_DOORS_DONE:
     PULS A, B, X, Y, U, PC
 
@@ -280,6 +245,36 @@ GET_ROOM_DONE:
     LDX #0              ; nullptr
     PULS B, Y, PC
 
+;----------------------------
+; display instructions
+;----------------------------
+INST_CMD:
+    PSHS X
+
+    JSR CLS
+    LDX #INST_MSG1
+    JSR PUTS
+
+    LDX #INST_MSG2
+    JSR PUTS
+
+    LDX #INST_MSG3
+    JSR PUTS
+
+    JSR WAIT
+    JSR CLS
+
+    PULS X, PC
+
+;----------------------------
+; Quit the game
+;----------------------------
+QUIT_CMD:
+    LDX #QUIT_MSG
+    JSR PUTS
+    JSR RESET
+    RTS
+    
 ;----------------------------
 ; Open room door
 ;
@@ -1321,7 +1316,12 @@ INCLUDE "math.inc"
 
     ; DIED: FCZ "YOU HAVE died! TRY AGAIN.\r\r"
     WIN_MSG: FCZ "USING THE ROPE YOU CLIMB DOWN FROM THE BALCONY. CONGRATULATIONS! YOU HAVE FOUND YOUR WAY OUT OF mystery mansion!\r\r"
-    DIE_MSG: FCZ "YOU FALL TO YOUR DEATH AND MAKE QUITE A MESS!\r\r"
+    DIE_MSG: FCZ "UNFORTUNATELY YOU FALL TO YOUR DEATH AND MAKE QUITE A SPECTACULAR MESS!\r\r"
+    INST_MSG1: FCZ "COMMAND EXAMPLES:\r\rMOVEMENT: GO NORTH, MOVE SOUTH, EAST\r\r"
+    INST_MSG2: FCZ "ITEMS: TAKE ITEM, GET ITEM, DROP ITEM, READ ITEM, INVENTORY\r\r"
+    INST_MSG3: FCZ "DOORS: OPEN DOOR, UNLOCK DOOR\r\rPRESS ANY KEY TO CONTINUE..."
+
+    QUIT_MSG: FCZ "GOODBYE, TRY AGAIN!?\r\r"
 
     NORTH_MOVE: FCZ "YOU MOVE TO THE NORTH.\r\r"
     SOUTH_MOVE: FCZ "YOU MOVE TO THE SOUTH.\r\r"
@@ -1331,7 +1331,7 @@ INCLUDE "math.inc"
     ROOM_MSG: FCZ "ROOM "
     MOVE_MSG: FCZ "MOVES "
 
-    START_MSG: FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. FIND YOUR WAY OUT!\r\rtype LOOK to examine room\r"
+    START_MSG: FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. EXPLORE AND FIND YOUR WAY OUT!\r\rtype LOOK to examine room\r"
 
     NOITEMS: FCZ "NOTHING!\r\r"
 
@@ -1541,7 +1541,7 @@ ITEMS:
     FDB MOP         FCB 0   FDB ACME_READ FCB NORMAL_ITEM
     FDB BLEACH      FCB 0   FDB DO_NOT_DRINK_READ FCB NORMAL_ITEM | DRINKABLE
     FDB BUCKET      FCB 0   FDB ACME_READ FCB NORMAL_ITEM
-    FDB BROOM       FCB 6   FDB NULL FCB NORMAL_ITEM 
+    FDB BROOM       FCB 6   FDB ACME_READ FCB NORMAL_ITEM 
     FDB GREEN_KEY   FCB 8   FDB NULL FCB NORMAL_ITEM
     FDB BLUE_KEY    FCB 13  FDB NULL FCB NORMAL_ITEM
     ; FDB PLAT_KEY FCB 0   FDB NULL FCB NORMAL_ITEM
@@ -1606,7 +1606,7 @@ CMDS:
     FCC "SO" FDB SOUTH          
     FCC "EA" FDB EAST
     FCC "WE" FDB WEST
-    FCC "QU" FDB RESET          ; quit game
+    FCC "QU" FDB QUIT_CMD       ; quit game
     FCC "IN" FDB INVENTORY_CMD  ; display inventory
     FCC "PA" FDB INVENTORY_CMD  ; display inventory
     FCC "OP" FDB OPEN_CMD       ; open door
@@ -1614,14 +1614,15 @@ CMDS:
     FCC "GE" FDB GET_CMD        ; get an objectø
     FCC "TA" FDB GET_CMD        ; take an object
     FCC "ST" FDB STEPS_CMD      ; display move count
-    FCC "??" FDB PASS           ; help command
+    FCC "??" FDB INST_CMD       ; help command
+    FCC "HE" FDB INST_CMD     ; help command
     FCC "CL" FDB CLOSE_CMD      ; close door
-    FCC "HE" FDB HEALTH_CMD     ; display health
+    FCC "HP" FDB HEALTH_CMD     ; display health points
     FCC "SC" FDB SCORE_CMD      ; display score
     FCC "US" FDB PASS           ; use an object
     FCC "PU" FDB PASS           ; place an object
     FCC "RE" FDB READ_CMD       ; read a message
-    FCC "EX" FDB READ_CMD
+    FCC "EX" FDB READ_CMD       ; examine an object
     FCC "UN" FDB UNLOCK_CMD     ; unlock room door
     ; FCC "DI" FDB DIE_CMD        ; player dies
 
