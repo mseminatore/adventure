@@ -182,7 +182,7 @@ CHECK_RULES_DONE:
 ; Return: none
 ;----------------------------
 CHECK_ITEMS:
-    PSHS A, X, Y, U
+    PSHS A, X, Y
     LDY #ITEMS          ; get items table ptr
 
 CHECK_ITEMS01:
@@ -194,10 +194,15 @@ CHECK_ITEMS01:
     CMPA ROOM               ; in current room?
     BNE CHECK_ITEMS02       ; if not...
 
-    TFR X, U            ; save X
+    LDA #FOUND_ITEM
+    ORA ITEM_PROP_OFFSET, Y
+    STA ITEM_PROP_OFFSET, Y
+
+    PSHS X              ; save X
     LDX #ITEM_MSG1      ; get item preamble
     JSR PUTS            ; print it
-    TFR U, X            ; restore X
+
+    PULS X              ; restore X
     JSR PUTS            ; print item description
     LDX #ITEM_MSG2      ; get item postamble
     JSR PUTS            ; print it
@@ -207,7 +212,7 @@ CHECK_ITEMS02:
     BRA CHECK_ITEMS01   ; do next item
 
 CHECK_ITEMS_DONE:
-    PULS A, X, Y, U, PC
+    PULS A, X, Y, PC
 
 ;-------------------------------
 ; Get door ptr for room
@@ -1020,8 +1025,10 @@ LOOK_CMD:
 ;-------------------------
 DBG_HOME:
     PSHS A
+    
     CLRA            ; room 0
     STA ROOM        ; set room
+
     PULS A, PC
 
 ;-------------------------
@@ -1034,6 +1041,7 @@ DBG_RP:
     JSR GET_ROOM_PTR
     JSR PRINT_HEX_WORD      ; 
     LDA #CR
+    JSR PUTC
     JSR PUTC
 
     PULS A, X, PC
@@ -1051,6 +1059,7 @@ STEPS_CMD:
     JSR PRINT_DEC_WORD
     LDA #CR
     JSR PUTC
+    JSR PUTC
 
     PULS A, X, PC
 
@@ -1067,7 +1076,8 @@ DBG_ROOM:
     JSR PRINT_DEC_BYTE
     LDA #CR
     JSR PUTC
-
+    JSR PUTC
+    
     PULS A, X, PC
 
 ;-------------------------
@@ -1109,7 +1119,44 @@ SCORE_CMD:
 ;     JSR INIT
 ;     JSR WAIT
 ;     RTS
-    
+
+;------------------------------------
+; Display how many items found
+;
+; Input: none
+; Return: none
+;------------------------------------
+DBG_FOUND:
+    PSHS A, B, X, Y         ; save A, B, X and Y
+    LDY #ITEMS              ; get items table ptr
+    CLRA                    ; zero item count
+
+DBG_FOUND01:
+    LDX ,Y                  ; get item description ptr
+    CMPX #NULL              ; is it null?
+    BEQ DBG_FOUND_DONE      ; if so we are done
+
+    LDB ITEM_PROP_OFFSET,Y  ; get item props
+    BITB #FOUND_ITEM        ; was item found?
+    BEQ DBG_FOUND02         ; if not, continue
+
+    INCA                    ; otherwise inc counter
+
+DBG_FOUND02:
+    LEAY ITEM_SIZE, Y       ; get next item
+    BRA DBG_FOUND01       ; keep going
+
+DBG_FOUND_DONE:
+    LDX #FOUND_MSG
+    JSR PUTS
+    JSR PRINT_DEC_BYTE
+
+    LDA #CR
+    JSR PUTC
+    JSR PUTC
+
+    PULS A, B, X, Y, PC
+
 ;------------------------------------
 ; show item count/capacity
 ;------------------------------------
@@ -1321,8 +1368,9 @@ INCLUDE "math.inc"
     EAST_MOVE: FCZ "YOU MOVE TO THE EAST.\r\r"
     WEST_MOVE: FCZ "YOU MOVE TO THE WEST.\r\r"
 
-    ROOM_MSG: FCZ "ROOM "
-    MOVE_MSG: FCZ "MOVES "
+    ROOM_MSG: FCZ "ROOM: "
+    MOVE_MSG: FCZ "MOVES: "
+    FOUND_MSG: FCZ "FOUND ITEMS "
 
     START_MSG: FCZ "YOU WAKE UP. YOUR HEAD HURTS. YOU CAN'T REMEMBER...ANYTHING. EXPLORE AND FIND YOUR WAY OUT!\r\rtype LOOK to examine room\r"
 
@@ -1622,6 +1670,7 @@ CMDS:
 
     ; debug commands
     ; FCC "GO" FDB DBG_GOTO
+    FCC "FO" FDB DBG_FOUND
     FCC "RO" FDB DBG_ROOM
     FCC "HO" FDB DBG_HOME
     FCC "RP" FDB DBG_RP

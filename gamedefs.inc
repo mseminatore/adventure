@@ -52,7 +52,7 @@
     ITEM_LOC_OFFSET     EQU 2   ; offset to item location
     ITEM_READ_OFFSET    EQU 3   ; offset to item read
     ITEM_PROP_OFFSET    EQU 5   ; offset to item properties
-
+    
     ; rule struct
     RULE_SIZE EQU 4             ; size of rule table entry
     RULE_ACTIOM_OFFSET EQU 2    ; offset to rule action
@@ -79,6 +79,7 @@
     OPENABLE    EQU 16          ; can be open/closed
     LOCKABLE    EQU 32          ; can be locked/unlocked
     DROPPABLE   EQU 64          ; can be dropped
+    FOUND_ITEM  EQU 128         ; item was found
 
     NORMAL_ITEM EQU TAKEABLE | DROPPABLE
 
