@@ -1605,6 +1605,7 @@ CMDS:
     FCC "DR" FDB DROP_CMD       ; drop an object
     FCC "GE" FDB GET_CMD        ; get an objectø
     FCC "TA" FDB GET_CMD        ; take an object
+    FCC "GR" FDB GET_CMD        ; grab an object
     FCC "ST" FDB STEPS_CMD      ; display move count
     FCC "??" FDB INST_CMD       ; help command
     FCC "HE" FDB INST_CMD     ; help command
