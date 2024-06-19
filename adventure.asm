@@ -266,6 +266,7 @@ INST_CMD:
 QUIT_CMD:
     LDX #QUIT_MSG
     JSR PUTS
+    JSR WAIT
     JSR RESET
     RTS
     
@@ -1592,31 +1593,31 @@ JMP_TABLE:
 ;---------------------------
 CMDS:
     FCC "LO" FDB PASS           ; look around
-    FCC "MO" FDB MOVE_CMD       ; move or go in a direction
-    FCC "GO" FDB MOVE_CMD
+    FCC "MO" FDB MOVE_CMD       ; MOVE in a direction
+    FCC "GO" FDB MOVE_CMD       ; GO in a direction
     FCC "NO" FDB NORTH          ; move dirs
     FCC "SO" FDB SOUTH          
     FCC "EA" FDB EAST
     FCC "WE" FDB WEST
-    FCC "QU" FDB QUIT_CMD       ; quit game
-    FCC "IN" FDB INVENTORY_CMD  ; display inventory
-    FCC "PA" FDB INVENTORY_CMD  ; display inventory
-    FCC "OP" FDB OPEN_CMD       ; open door
-    FCC "DR" FDB DROP_CMD       ; drop an object
-    FCC "GE" FDB GET_CMD        ; get an objectø
-    FCC "TA" FDB GET_CMD        ; take an object
-    FCC "GR" FDB GET_CMD        ; grab an object
-    FCC "ST" FDB STEPS_CMD      ; display move count
-    FCC "??" FDB INST_CMD       ; help command
-    FCC "HE" FDB INST_CMD     ; help command
+    FCC "QU" FDB QUIT_CMD       ; QUIT game
+    FCC "IN" FDB INVENTORY_CMD  ; display INVENTORY
+    FCC "PA" FDB INVENTORY_CMD  ; display INVENTORY
+    FCC "OP" FDB OPEN_CMD       ; OPEN door
+    FCC "DR" FDB DROP_CMD       ; DROP an object
+    FCC "GE" FDB GET_CMD        ; GET an object
+    FCC "TA" FDB GET_CMD        ; TAKE an object
+    FCC "GR" FDB GET_CMD        ; GRAB an object
+    FCC "ST" FDB STEPS_CMD      ; display STEP count
+    FCC "??" FDB INST_CMD       ; HELP command
+    FCC "HE" FDB INST_CMD       ; HELP command
     FCC "CL" FDB CLOSE_CMD      ; close door
-    FCC "HP" FDB HEALTH_CMD     ; display health points
+    FCC "HP" FDB HEALTH_CMD     ; display Health Points
     FCC "SC" FDB SCORE_CMD      ; display score
-    FCC "US" FDB PASS           ; use an object
-    FCC "PU" FDB PASS           ; place an object
-    FCC "RE" FDB READ_CMD       ; read a message
-    FCC "EX" FDB READ_CMD       ; examine an object
-    FCC "UN" FDB UNLOCK_CMD     ; unlock room door
+    FCC "US" FDB PASS           ; USE an object
+    FCC "PU" FDB PASS           ; PUT an object
+    FCC "RE" FDB READ_CMD       ; READ a message
+    FCC "EX" FDB READ_CMD       ; EXAMINE an object
+    FCC "UN" FDB UNLOCK_CMD     ; UNLOCK room door
     ; FCC "DI" FDB DIE_CMD        ; player dies
 
     ; debug commands
