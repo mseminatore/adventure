@@ -1293,7 +1293,7 @@ INCLUDE "math.inc"
 ;[]--------------[]
     PROMPT: FCZ ">"
 
-    ; CURSOR FCC "!/-\"
+    CURSOR: FCC "!/-" FCB 28
 
     UNKCMD: FCZ "I DON'T UNDERSTAND! TRY AGAIN?\r\r"
 

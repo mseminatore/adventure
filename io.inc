@@ -253,14 +253,31 @@ PUTS_DONE:
 ; Return: char in A
 ;-------------------
 GETC:
-    PSHS DP, Y, U       ; save regs
+    PSHS B, DP, X, Y, U       ; save regs
+
+    LDU #CURSOR     ; get cursor ptr
+    CLRB            ; clear cursor index
+    LDY CURPOS      ; get cursor screen loc
+    LDX #0          ; clear cursor index counter
 
 GETC01:
+    PSHS X          ; save X on stack
+    PULS B          ; get XH in B
+    PULS A          ; discard XL
+    ANDB #3         ; clamp B [0..3]
+
+    LDA B, U        ; get cursor char
+    EORA #$40       ; toggle case
+    STA ,Y          ; put it on screen
+    LEAX 1, X       ; inc cursor index counter
+
     JSR [CHARIN]    ; poll keyboard
     BEQ GETC01      ; wait for keypress
 
-    ; JSR PUTC        ; echo char to screen
-    PULS DP, Y, U, PC   ; restore regs and return
+    LDB #BLANK      ; replace cursor char with blank
+    STB ,Y
+
+    PULS B, DP, X, Y, U, PC   ; restore regs and return
 
 ;---------------------------
 ; GET CHAR STRING
