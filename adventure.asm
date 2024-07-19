@@ -183,6 +183,7 @@ CHECK_RULES_DONE:
 ;----------------------------
 CHECK_ITEMS:
     PSHS A, X, Y
+    
     LDY #ITEMS          ; get items table ptr
 
 CHECK_ITEMS01:
@@ -960,9 +961,11 @@ NORTH:
 ;-------------------------
 SOUTH:
     PSHS B, X
+
     LDB #1
     LDX #SOUTH_MOVE
     JSR MOVE
+
     PULS B, X, PC
 
 ;-------------------------
@@ -970,9 +973,11 @@ SOUTH:
 ;-------------------------
 EAST:
     PSHS B, X
+
     LDB #2
     LDX #EAST_MOVE
     JSR MOVE
+
     PULS B, X, PC
 
 ;-------------------------
@@ -980,9 +985,11 @@ EAST:
 ;-------------------------
 WEST:
     PSHS B, X
+
     LDB #3
     LDX #WEST_MOVE
     JSR MOVE
+
     PULS B, X, PC
 
 ;---------------------------
@@ -1010,6 +1017,7 @@ MOVE_CMD:
 ;-------------------------
 LOOK_CMD:
     PSHS X
+
     JSR GET_ROOM_PTR    ; get current room ptr
     LDX ,X              ; get room description
     JSR PUTS            ; print it out
@@ -1036,6 +1044,7 @@ DBG_HOME:
 ;-------------------------
 DBG_RP:
     PSHS A, X
+
     LDA #'$'
     JSR PUTC
     JSR GET_ROOM_PTR
@@ -1085,6 +1094,7 @@ DBG_ROOM:
 ;-------------------------
 HEALTH_CMD:
     PSHS A, X
+
     LDX #HEALTH_START
     JSR PUTS
 
@@ -1093,6 +1103,7 @@ HEALTH_CMD:
 
     LDX #HEALTH_TAIL
     JSR PUTS
+
     PULS A, X, PC
 
 ;------------------------------------
@@ -1100,6 +1111,7 @@ HEALTH_CMD:
 ;------------------------------------
 SCORE_CMD:
     PSHS A, X
+
     LDX #SCORE_START
     JSR PUTS
 
@@ -1108,6 +1120,7 @@ SCORE_CMD:
 
     LDX #END_MSG
     JSR PUTS
+
     PULS A, X, PC
 
 ;------------------------------------
@@ -1128,6 +1141,7 @@ SCORE_CMD:
 ;------------------------------------
 DBG_FOUND:
     PSHS A, B, X, Y         ; save A, B, X and Y
+
     LDY #ITEMS              ; get items table ptr
     CLRA                    ; zero item count
 
@@ -1188,8 +1202,10 @@ DBG_GOTO:
 ;---------------------------------
 DW_ENTER_ACTION:
     PSHS X
+
     LDX #DW1_MSG
     JSR PUTS
+
     PULS X, PC
 
 ;---------------------------------
@@ -1197,8 +1213,10 @@ DW_ENTER_ACTION:
 ;---------------------------------
 DW_EXIT_ACTION:
     PSHS X
+
     LDX #DW2_MSG
     JSR PUTS
+
     PULS X, PC
 
 ;---------------------------------
@@ -1206,8 +1224,10 @@ DW_EXIT_ACTION:
 ;---------------------------------
 EL_ENTER_ACTION:
     PSHS X
+
     LDX #EL1_MSG
     JSR PUTS
+
     PULS X, PC
 
 ;---------------------------------
@@ -1215,8 +1235,10 @@ EL_ENTER_ACTION:
 ;---------------------------------
 EL_EXIT_ACTION:
     PSHS X
+
     LDX #EL2_MSG
     JSR PUTS
+
     PULS X, PC
 
 ;---------------------------------
@@ -1245,11 +1267,13 @@ BALCONY_DONE:
 ;---------------------------------
 FALL_ACTION:
     PSHS A, X
+
     LDX #FALL_MSG
     JSR PUTS
     LDA HEALTH      ; get current health
     SUBA #FALL_DMG
     STA HEALTH
+
     PULS A, X, PC
 
 ;---------------------------
@@ -1281,6 +1305,7 @@ INIT:
 ;------------------------------------
 FIRST_CARRIED_ITEM:
     PSHS A, B, Y
+
     LDY #ITEMS          ; get items table ptr
 
 FIRST_CARRIED01:
