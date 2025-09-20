@@ -166,7 +166,7 @@ CHECK_RULES01:
     JSR [,Y]                ; call predicate, if THIS
     BNE CHECK_RULES02       ; if false do next rule
 
-    JSR [RULE_ACTIOM_OFFSET,Y]  ; then do the ACTION
+    JSR [RULE_ACTION_OFFSET,Y]  ; then do the ACTION
 
 CHECK_RULES02:
     LEAY RULE_SIZE,Y        ; get next rule ptr

@@ -55,7 +55,7 @@
     
     ; rule struct
     RULE_SIZE EQU 4             ; size of rule table entry
-    RULE_ACTIOM_OFFSET EQU 2    ; offset to rule action
+    RULE_ACTION_OFFSET EQU 2    ; offset to rule action
 
     ; decorator struct
     DECORATOR_SIZE EQU 3        ; size of decorator table entry
